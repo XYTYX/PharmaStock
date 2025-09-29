@@ -89,6 +89,10 @@ const translations = {
     'inventory.sortOrder': 'Sort Order',
     'inventory.ascending': 'Ascending',
     'inventory.descending': 'Descending',
+    'inventory.form.capsule': 'Capsule',
+    'inventory.form.tablet': 'Tablet',
+    'inventory.form.eyeDrops': 'Eye Drops',
+    'inventory.form.cream': 'Cream',
     
     // Dispensation
     'dispensation.subtitle': 'History of inventory movements and dispensations',
@@ -274,6 +278,10 @@ const translations = {
     'inventory.sortOrder': 'Ordre de tri',
     'inventory.ascending': 'Croissant',
     'inventory.descending': 'Décroissant',
+    'inventory.form.capsule': 'Gélule',
+    'inventory.form.tablet': 'Comprimé',
+    'inventory.form.eyeDrops': 'Collyre',
+    'inventory.form.cream': 'Pommade',
     
     // Dispensation
     'dispensation.subtitle': 'Historique des mouvements d\'inventaire et dispensations',

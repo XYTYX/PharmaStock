@@ -11,6 +11,17 @@ export default function CurrentStockPage() {
     sortOrder: 'asc'
   });
 
+  // Function to translate form values
+  const translateForm = (form: string) => {
+    const formMap: { [key: string]: string } = {
+      'CAPSULE': t('inventory.form.capsule'),
+      'TABLET': t('inventory.form.tablet'),
+      'EYE_DROPS': t('inventory.form.eyeDrops'),
+      'CREAM': t('inventory.form.cream')
+    };
+    return formMap[form] || form;
+  };
+
   // Fetch all inventory data once
   const { data: stockData, isLoading, error } = useQuery({
     queryKey: ['current-stock-all'],
@@ -26,8 +37,7 @@ export default function CurrentStockPage() {
     // Filter by search term
     if (filter.search) {
       filtered = filtered.filter((item: any) => 
-        item.item?.name?.toLowerCase().includes(filter.search.toLowerCase()) ||
-        item.item?.description?.toLowerCase().includes(filter.search.toLowerCase())
+        item.item?.name?.toLowerCase().includes(filter.search.toLowerCase())
       );
     }
 
@@ -42,8 +52,8 @@ export default function CurrentStockPage() {
         aValue = a.currentStock;
         bValue = b.currentStock;
       } else if (filter.sortBy === 'item.form') {
-        aValue = a.item?.form || '';
-        bValue = b.item?.form || '';
+        aValue = a.item?.form ? translateForm(a.item.form) : '';
+        bValue = b.item?.form ? translateForm(b.item.form) : '';
       } else {
         aValue = a.item?.name || '';
         bValue = b.item?.name || '';
@@ -167,19 +177,16 @@ export default function CurrentStockPage() {
                   {t('inventory.item')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('inventory.description')}
+                  {t('inventory.form')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('inventory.form')}
+                  {t('inventory.expiryDate')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {t('inventory.currentStock')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {t('inventory.stockLevel')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('inventory.expiryDate')}
                 </th>
               </tr>
             </thead>
@@ -200,13 +207,11 @@ export default function CurrentStockPage() {
                         {item.item?.name || 'Article supprimé'}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 max-w-xs truncate">
-                        {item.item?.description || '-'}
-                      </div>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {item.item?.form ? translateForm(item.item.form) : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {item.item?.form || '-'}
+                      {item.item?.expiryDate || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <span className="font-medium">{item.currentStock}</span>
@@ -215,9 +220,6 @@ export default function CurrentStockPage() {
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stockLevel.color}`}>
                         {stockLevel.text}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {item.item?.expiryDate || '-'}
                     </td>
                   </tr>
                 );
