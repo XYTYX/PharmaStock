@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { inventoryApi } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -11,16 +11,53 @@ export default function CurrentStockPage() {
     sortOrder: 'asc'
   });
 
+  // Fetch all inventory data once
   const { data: stockData, isLoading, error } = useQuery({
-    queryKey: ['current-stock', filter],
-    queryFn: () => inventoryApi.getCurrentStock({
-      search: filter.search || undefined,
-      sortBy: filter.sortBy,
-      sortOrder: filter.sortOrder
-    })
+    queryKey: ['current-stock-all'],
+    queryFn: () => inventoryApi.getCurrentStock({ limit: 1000 }) // Get all items
   });
 
-  const inventory = stockData?.inventory || [];
+  const allInventory = stockData?.inventory || [];
+
+  // Client-side filtering and sorting
+  const inventory = useMemo(() => {
+    let filtered = allInventory;
+
+    // Filter by search term
+    if (filter.search) {
+      filtered = filtered.filter((item: any) => 
+        item.item?.name?.toLowerCase().includes(filter.search.toLowerCase()) ||
+        item.item?.description?.toLowerCase().includes(filter.search.toLowerCase())
+      );
+    }
+
+    // Sort the results
+    filtered.sort((a: any, b: any) => {
+      let aValue, bValue;
+      
+      if (filter.sortBy === 'item.name') {
+        aValue = a.item?.name || '';
+        bValue = b.item?.name || '';
+      } else if (filter.sortBy === 'currentStock') {
+        aValue = a.currentStock;
+        bValue = b.currentStock;
+      } else if (filter.sortBy === 'item.form') {
+        aValue = a.item?.form || '';
+        bValue = b.item?.form || '';
+      } else {
+        aValue = a.item?.name || '';
+        bValue = b.item?.name || '';
+      }
+
+      if (filter.sortOrder === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
+
+    return filtered;
+  }, [allInventory, filter.search, filter.sortBy, filter.sortOrder]);
 
   if (isLoading) {
     return (
