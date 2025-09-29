@@ -1,0 +1,38 @@
+module.exports = {
+  apps: [
+    {
+      name: 'pharmastock-backend',
+      script: './backend/dist/index.js',
+      cwd: process.cwd(),
+      env: {
+        NODE_ENV: 'development',
+        PORT: 3000,
+        DATABASE_URL: 'file:./prisma/dev.db',
+        FRONTEND_URL: 'http://localhost:3001'
+      },
+      watch: false,
+      instances: 1,
+      exec_mode: 'fork',
+      log_file: './backend.log',
+      out_file: './backend.log',
+      error_file: './backend.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
+    },
+    {
+      name: 'pharmastock-frontend',
+      script: 'npm',
+      args: 'run dev -- --port 3001 --host 0.0.0.0',
+      cwd: './frontend',
+      env: {
+        NODE_ENV: 'development'
+      },
+      watch: false,
+      instances: 1,
+      exec_mode: 'fork',
+      log_file: './frontend.log',
+      out_file: './frontend.log',
+      error_file: './frontend.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
+    }
+  ]
+};

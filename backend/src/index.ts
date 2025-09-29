@@ -5,14 +5,8 @@ import { PrismaClient } from '@prisma/client';
 
 // Import routes
 import authRoutes from './routes/auth';
-import productRoutes from './routes/products';
-import supplierRoutes from './routes/suppliers';
-import categoryRoutes from './routes/categories';
-import purchaseOrderRoutes from './routes/purchaseOrders';
-import saleRoutes from './routes/sales';
 import inventoryRoutes from './routes/inventory';
 import userRoutes from './routes/users';
-import reportRoutes from './routes/reports';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler';
@@ -47,14 +41,8 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/products', authenticateToken, productRoutes);
-app.use('/api/suppliers', authenticateToken, supplierRoutes);
-app.use('/api/categories', authenticateToken, categoryRoutes);
-app.use('/api/purchase-orders', authenticateToken, purchaseOrderRoutes);
-app.use('/api/sales', authenticateToken, saleRoutes);
 app.use('/api/inventory', authenticateToken, inventoryRoutes);
 app.use('/api/users', authenticateToken, userRoutes);
-app.use('/api/reports', authenticateToken, reportRoutes);
 
 // Error handling middleware
 app.use(errorHandler);

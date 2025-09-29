@@ -1,8 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useLanguage } from '../contexts/LanguageContext';
 import { inventoryApi } from '../services/api';
-import { InventoryLog, Product } from '../types';
 
 const logTypeLabels = {
   PURCHASE: 'Achat',
@@ -15,10 +13,9 @@ const logTypeLabels = {
 };
 
 export default function DispensationTrackingPage() {
-  const { t } = useLanguage();
   const [filter, setFilter] = useState({
     search: '',
-    type: '',
+    reason: '',
     dateFrom: '',
     dateTo: ''
   });
@@ -27,15 +24,15 @@ export default function DispensationTrackingPage() {
     queryKey: ['inventory-logs', filter],
     queryFn: () => inventoryApi.getInventoryLogs({
       search: filter.search,
-      type: filter.type || undefined,
-      dateFrom: filter.dateFrom || undefined,
-      dateTo: filter.dateTo || undefined
+      reason: filter.reason || undefined,
+      startDate: filter.dateFrom || undefined,
+      endDate: filter.dateTo || undefined
     })
   });
 
-  const logs = inventoryLogs?.data || [];
+  const logs = inventoryLogs?.logs || [];
 
-  const getTypeBadge = (type: string) => {
+  const getTypeBadge = (reason: string) => {
     const colors = {
       PURCHASE: 'bg-green-100 text-green-800',
       DISPENSATION: 'bg-blue-100 text-blue-800',
@@ -47,31 +44,14 @@ export default function DispensationTrackingPage() {
     };
 
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800'}`}>
-        {logTypeLabels[type as keyof typeof logTypeLabels] || type}
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[reason as keyof typeof colors] || 'bg-gray-100 text-gray-800'}`}>
+        {logTypeLabels[reason as keyof typeof logTypeLabels] || reason}
       </span>
     );
   };
 
-  const getQuantityDisplay = (quantity: number, type: string) => {
-    const isNegative = quantity < 0;
-    const absQuantity = Math.abs(quantity);
-    
-    return (
-      <span className={`font-medium ${isNegative ? 'text-red-600' : 'text-green-600'}`}>
-        {isNegative ? '-' : '+'}{absQuantity}
-      </span>
-    );
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  const getQuantityDisplay = (quantity: number) => {
+    return quantity > 0 ? `+${quantity}` : quantity.toString();
   };
 
   if (isLoading) {
@@ -85,7 +65,7 @@ export default function DispensationTrackingPage() {
   if (error) {
     return (
       <div className="text-red-600 text-center py-8">
-        Erreur lors du chargement des mouvements
+        Erreur lors du chargement des logs d'inventaire
       </div>
     );
   }
@@ -95,7 +75,7 @@ export default function DispensationTrackingPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Suivi des Dispensations</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Historique des entrées et sorties de médicaments
+          Historique des mouvements d'inventaire et dispensations
         </p>
       </div>
 
@@ -103,25 +83,25 @@ export default function DispensationTrackingPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="text-2xl font-bold text-green-600">
-            {logs.filter(log => log.type === 'PURCHASE').length}
+            {logs.filter((log: any) => log.reason === 'PURCHASE').length}
           </div>
           <div className="text-sm text-gray-500">Achats</div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="text-2xl font-bold text-blue-600">
-            {logs.filter(log => log.type === 'DISPENSATION').length}
+            {logs.filter((log: any) => log.reason === 'DISPENSATION').length}
           </div>
           <div className="text-sm text-gray-500">Dispensations</div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="text-2xl font-bold text-yellow-600">
-            {logs.filter(log => log.type === 'ADJUSTMENT').length}
+            {logs.filter((log: any) => log.reason === 'ADJUSTMENT').length}
           </div>
           <div className="text-sm text-gray-500">Ajustements</div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="text-2xl font-bold text-red-600">
-            {logs.filter(log => log.type === 'EXPIRED' || log.type === 'DAMAGED').length}
+            {logs.filter((log: any) => log.reason === 'EXPIRED' || log.reason === 'DAMAGED').length}
           </div>
           <div className="text-sm text-gray-500">Pertes</div>
         </div>
@@ -136,7 +116,7 @@ export default function DispensationTrackingPage() {
             </label>
             <input
               type="text"
-              placeholder="Nom du médicament ou référence..."
+              placeholder="Nom de l'article..."
               value={filter.search}
               onChange={(e) => setFilter({ ...filter, search: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -148,8 +128,8 @@ export default function DispensationTrackingPage() {
               Type de mouvement
             </label>
             <select
-              value={filter.type}
-              onChange={(e) => setFilter({ ...filter, type: e.target.value })}
+              value={filter.reason}
+              onChange={(e) => setFilter({ ...filter, reason: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Tous les types</option>
@@ -196,64 +176,51 @@ export default function DispensationTrackingPage() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date/Heure
+                  Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Article
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Type
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Médicament
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Quantité
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Stock précédent
+                  Utilisateur
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Nouveau stock
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Raison
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Référence
+                  Notes
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {logs.map((log: InventoryLog) => (
+              {logs.map((log: any) => (
                 <tr key={log.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatDate(log.createdAt)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getTypeBadge(log.type)}
+                    {new Date(log.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
-                      {log.product?.name || 'Médicament inconnu'}
+                      {log.item?.name || 'Article supprimé'}
                     </div>
-                    {log.product?.internalId && (
-                      <div className="text-sm text-gray-500 font-mono">
-                        {log.product.internalId}
-                      </div>
-                    )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {getQuantityDisplay(log.quantity, log.type)}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {getTypeBadge(log.reason)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {log.previousStock}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {log.newStock}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`text-sm font-medium ${
+                      log.totalAmount > 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {getQuantityDisplay(log.totalAmount)}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {log.reason || '-'}
+                    {log.user?.firstName} {log.user?.lastName}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {log.reference || '-'}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {log.notes || '-'}
                   </td>
                 </tr>
               ))}
@@ -263,7 +230,7 @@ export default function DispensationTrackingPage() {
         
         {logs.length === 0 && (
           <div className="text-center py-8 text-gray-500">
-            Aucun mouvement trouvé avec les critères sélectionnés
+            Aucun mouvement d'inventaire trouvé avec les critères sélectionnés
           </div>
         )}
       </div>

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { LoginRequest, LoginResponse, User } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
 // Create axios instance
 const api = axios.create({
@@ -51,144 +51,30 @@ export const authApi = {
   },
 };
 
-// Products API
-export const productsApi = {
-  getProducts: async (params?: any) => {
-    const response = await api.get('/products', { params });
+// Items API
+export const itemsApi = {
+  getItems: async (params?: any) => {
+    const response = await api.get('/items', { params });
     return response.data;
   },
 
-  getProduct: async (id: string) => {
-    const response = await api.get(`/products/${id}`);
+  getItem: async (id: string) => {
+    const response = await api.get(`/items/${id}`);
     return response.data;
   },
 
-  createProduct: async (data: any) => {
-    const response = await api.post('/products', data);
+  createItem: async (data: any) => {
+    const response = await api.post('/items', data);
     return response.data;
   },
 
-  updateProduct: async (id: string, data: any) => {
-    const response = await api.put(`/products/${id}`, data);
+  updateItem: async (id: string, data: any) => {
+    const response = await api.put(`/items/${id}`, data);
     return response.data;
   },
 
-  deleteProduct: async (id: string) => {
-    const response = await api.delete(`/products/${id}`);
-    return response.data;
-  },
-
-  getLowStockProducts: async () => {
-    const response = await api.get('/products/alerts/low-stock');
-    return response.data;
-  },
-};
-
-// Categories API
-export const categoriesApi = {
-  getCategories: async () => {
-    const response = await api.get('/categories');
-    return response.data;
-  },
-
-  getCategory: async (id: string) => {
-    const response = await api.get(`/categories/${id}`);
-    return response.data;
-  },
-
-  createCategory: async (data: any) => {
-    const response = await api.post('/categories', data);
-    return response.data;
-  },
-
-  updateCategory: async (id: string, data: any) => {
-    const response = await api.put(`/categories/${id}`, data);
-    return response.data;
-  },
-
-  deleteCategory: async (id: string) => {
-    const response = await api.delete(`/categories/${id}`);
-    return response.data;
-  },
-};
-
-// Suppliers API
-export const suppliersApi = {
-  getSuppliers: async () => {
-    const response = await api.get('/suppliers');
-    return response.data;
-  },
-
-  getSupplier: async (id: string) => {
-    const response = await api.get(`/suppliers/${id}`);
-    return response.data;
-  },
-
-  createSupplier: async (data: any) => {
-    const response = await api.post('/suppliers', data);
-    return response.data;
-  },
-
-  updateSupplier: async (id: string, data: any) => {
-    const response = await api.put(`/suppliers/${id}`, data);
-    return response.data;
-  },
-
-  deleteSupplier: async (id: string) => {
-    const response = await api.delete(`/suppliers/${id}`);
-    return response.data;
-  },
-};
-
-// Purchase Orders API
-export const purchaseOrdersApi = {
-  getPurchaseOrders: async (params?: any) => {
-    const response = await api.get('/purchase-orders', { params });
-    return response.data;
-  },
-
-  getPurchaseOrder: async (id: string) => {
-    const response = await api.get(`/purchase-orders/${id}`);
-    return response.data;
-  },
-
-  createPurchaseOrder: async (data: any) => {
-    const response = await api.post('/purchase-orders', data);
-    return response.data;
-  },
-
-  updatePurchaseOrderStatus: async (id: string, status: string) => {
-    const response = await api.patch(`/purchase-orders/${id}/status`, { status });
-    return response.data;
-  },
-
-  receivePurchaseOrder: async (id: string, receivedItems: any[]) => {
-    const response = await api.post(`/purchase-orders/${id}/receive`, { receivedItems });
-    return response.data;
-  },
-};
-
-// Sales API
-export const salesApi = {
-  getSales: async (params?: any) => {
-    const response = await api.get('/sales', { params });
-    return response.data;
-  },
-
-  getSale: async (id: string) => {
-    const response = await api.get(`/sales/${id}`);
-    return response.data;
-  },
-
-  createSale: async (data: any) => {
-    const response = await api.post('/sales', data);
-    return response.data;
-  },
-
-  getDailySummary: async (date?: string) => {
-    const response = await api.get('/sales/summary/daily', { 
-      params: date ? { date } : {} 
-    });
+  deleteItem: async (id: string) => {
+    const response = await api.delete(`/items/${id}`);
     return response.data;
   },
 };
@@ -216,30 +102,35 @@ export const inventoryApi = {
   },
 };
 
-// Reports API
-export const reportsApi = {
-  getSalesReport: async (params?: any) => {
-    const response = await api.get('/reports/sales', { params });
+// Users API
+export const usersApi = {
+  getUsers: async (params?: any) => {
+    const response = await api.get('/users', { params });
     return response.data;
   },
 
-  getInventoryReport: async (params?: any) => {
-    const response = await api.get('/reports/inventory', { params });
+  getUser: async (id: string) => {
+    const response = await api.get(`/users/${id}`);
     return response.data;
   },
 
-  getPurchaseOrdersReport: async (params?: any) => {
-    const response = await api.get('/reports/purchase-orders', { params });
+  createUser: async (data: any) => {
+    const response = await api.post('/users', data);
     return response.data;
   },
 
-  getTopProducts: async (params?: any) => {
-    const response = await api.get('/reports/top-products', { params });
+  updateUser: async (id: string, data: any) => {
+    const response = await api.put(`/users/${id}`, data);
     return response.data;
   },
 
-  getDashboardData: async () => {
-    const response = await api.get('/reports/dashboard');
+  changePassword: async (id: string, data: any) => {
+    const response = await api.post(`/users/${id}/change-password`, data);
+    return response.data;
+  },
+
+  deactivateUser: async (id: string) => {
+    const response = await api.delete(`/users/${id}`);
     return response.data;
   },
 };

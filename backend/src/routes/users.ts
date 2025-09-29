@@ -7,7 +7,7 @@ import { requireRole } from '../middleware/auth';
 const router = express.Router();
 
 const userSchema = z.object({
-  email: z.string().email('Invalid email format'),
+  username: z.string().min(3, 'Username must be at least 3 characters'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
@@ -47,7 +47,7 @@ router.get('/', requireRole(['ADMIN']), async (req, res) => {
       where.OR = [
         { firstName: { contains: search as string, mode: 'insensitive' } },
         { lastName: { contains: search as string, mode: 'insensitive' } },
-        { email: { contains: search as string, mode: 'insensitive' } }
+        { username: { contains: search as string, mode: 'insensitive' } }
       ];
     }
 
@@ -59,7 +59,7 @@ router.get('/', requireRole(['ADMIN']), async (req, res) => {
         where,
         select: {
           id: true,
-          email: true,
+          username: true,
           firstName: true,
           lastName: true,
           role: true,
@@ -103,7 +103,7 @@ router.get('/:id', async (req, res) => {
       where: { id },
       select: {
         id: true,
-        email: true,
+        username: true,
         firstName: true,
         lastName: true,
         role: true,
@@ -126,11 +126,11 @@ router.get('/:id', async (req, res) => {
 // Create user (Admin only)
 router.post('/', requireRole(['ADMIN']), async (req, res) => {
   try {
-    const { email, password, firstName, lastName, role } = userSchema.parse(req.body);
+    const { username, password, firstName, lastName, role } = userSchema.parse(req.body);
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { username }
     });
 
     if (existingUser) {
@@ -143,7 +143,7 @@ router.post('/', requireRole(['ADMIN']), async (req, res) => {
     // Create user
     const user = await prisma.user.create({
       data: {
-        email,
+        username,
         password: hashedPassword,
         firstName,
         lastName,
@@ -151,7 +151,7 @@ router.post('/', requireRole(['ADMIN']), async (req, res) => {
       },
       select: {
         id: true,
-        email: true,
+        username: true,
         firstName: true,
         lastName: true,
         role: true,
@@ -190,14 +190,14 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Check for email conflicts
-    if (data.email && data.email !== existingUser.email) {
-      const emailConflict = await prisma.user.findUnique({
-        where: { email: data.email }
+    // Check for username conflicts
+    if (data.username && data.username !== existingUser.username) {
+      const usernameConflict = await prisma.user.findUnique({
+        where: { username: data.username }
       });
 
-      if (emailConflict) {
-        return res.status(400).json({ error: 'Email already in use' });
+      if (usernameConflict) {
+        return res.status(400).json({ error: 'Username already in use' });
       }
     }
 
@@ -206,7 +206,7 @@ router.put('/:id', async (req, res) => {
       data,
       select: {
         id: true,
-        email: true,
+        username: true,
         firstName: true,
         lastName: true,
         role: true,

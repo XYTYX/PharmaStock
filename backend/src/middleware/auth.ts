@@ -5,7 +5,7 @@ import { prisma } from '../index';
 interface AuthRequest extends Request {
   user?: {
     id: string;
-    email: string;
+    username: string;
     role: string;
   };
 }
@@ -28,7 +28,7 @@ export const authenticateToken = async (
     // Verify user still exists and is active
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, email: true, role: true, isActive: true }
+      select: { id: true, username: true, role: true, isActive: true }
     });
 
     if (!user || !user.isActive) {
@@ -37,7 +37,7 @@ export const authenticateToken = async (
 
     req.user = {
       id: user.id,
-      email: user.email,
+      username: user.username,
       role: user.role
     };
 

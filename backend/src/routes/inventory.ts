@@ -5,10 +5,9 @@ import { prisma } from '../index';
 const router = express.Router();
 
 const inventoryAdjustmentSchema = z.object({
-  productId: z.string().min(1, 'Product is required'),
+  itemId: z.string().min(1, 'Item is required'),
   quantity: z.number().int(),
-  reason: z.string().min(1, 'Reason is required'),
-  type: z.enum(['ADJUSTMENT', 'TRANSFER', 'EXPIRED', 'DAMAGED', 'RETURN'])
+  reason: z.enum(['PURCHASE', 'DISPENSATION', 'ADJUSTMENT', 'TRANSFER', 'EXPIRED', 'DAMAGED', 'RETURN'])
 });
 
 // Get inventory logs
@@ -17,8 +16,8 @@ router.get('/logs', async (req, res) => {
     const {
       page = '1',
       limit = '10',
-      productId,
-      type,
+      itemId,
+      reason,
       startDate,
       endDate,
       sortBy = 'createdAt',
@@ -31,12 +30,12 @@ router.get('/logs', async (req, res) => {
 
     const where: any = {};
 
-    if (productId) {
-      where.productId = productId;
+    if (itemId) {
+      where.itemId = itemId;
     }
 
-    if (type) {
-      where.type = type;
+    if (reason) {
+      where.reason = reason;
     }
 
     if (startDate || endDate) {
@@ -52,7 +51,7 @@ router.get('/logs', async (req, res) => {
       prisma.inventoryLog.findMany({
         where,
         include: {
-          product: true,
+          item: true,
           user: true
         },
         orderBy,
@@ -79,19 +78,24 @@ router.get('/logs', async (req, res) => {
 // Create inventory adjustment
 router.post('/adjust', async (req, res) => {
   try {
-    const { productId, quantity, reason, type } = inventoryAdjustmentSchema.parse(req.body);
+    const { itemId, quantity, reason } = inventoryAdjustmentSchema.parse(req.body);
     const userId = (req as any).user.id;
 
-    // Get current product
-    const product = await prisma.product.findUnique({
-      where: { id: productId }
+    // Get current item
+    const item = await prisma.item.findUnique({
+      where: { id: itemId }
     });
 
-    if (!product) {
-      return res.status(404).json({ error: 'Product not found' });
+    if (!item) {
+      return res.status(404).json({ error: 'Item not found' });
     }
 
-    const previousStock = product.currentStock;
+    // Get current inventory
+    const inventory = await prisma.inventory.findFirst({
+      where: { itemId }
+    });
+
+    const previousStock = inventory?.currentStock || 0;
     const newStock = previousStock + quantity;
 
     // Validate stock level
@@ -103,27 +107,34 @@ router.post('/adjust', async (req, res) => {
       });
     }
 
-    // Update product stock and create log in transaction
+    // Update inventory and create log in transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Update product stock
-      await tx.product.update({
-        where: { id: productId },
-        data: { currentStock: newStock }
-      });
+      // Update or create inventory
+      if (inventory) {
+        await tx.inventory.update({
+          where: { id: inventory.id },
+          data: { currentStock: newStock }
+        });
+      } else {
+        await tx.inventory.create({
+          data: {
+            itemId,
+            currentStock: newStock
+          }
+        });
+      }
 
       // Create inventory log
       const log = await tx.inventoryLog.create({
         data: {
-          productId,
+          itemId,
           userId,
-          type,
-          quantity,
-          previousStock,
-          newStock,
-          reason
+          reason,
+          totalAmount: quantity,
+          notes: `Stock adjustment: ${quantity > 0 ? '+' : ''}${quantity}`
         },
         include: {
-          product: true,
+          item: true,
           user: true
         }
       });
@@ -140,106 +151,35 @@ router.post('/adjust', async (req, res) => {
   }
 });
 
-// Get stock alerts
-router.get('/alerts', async (req, res) => {
-  try {
-    const [lowStock, expired, expiringSoon] = await Promise.all([
-      // Low stock products
-      prisma.product.findMany({
-        where: {
-          isActive: true,
-          currentStock: {
-            lte: prisma.product.fields.minStockLevel
-          }
-        },
-        include: {
-          category: true,
-          supplier: true
-        },
-        orderBy: { currentStock: 'asc' }
-      }),
-      // Expired products (if you add expiration date field)
-      prisma.product.findMany({
-        where: {
-          isActive: true,
-          // Add expiration date logic here when field is added
-        },
-        include: {
-          category: true,
-          supplier: true
-        }
-      }),
-      // Expiring soon products (if you add expiration date field)
-      prisma.product.findMany({
-        where: {
-          isActive: true,
-          // Add expiration date logic here when field is added
-        },
-        include: {
-          category: true,
-          supplier: true
-        }
-      })
-    ]);
-
-    res.json({
-      lowStock,
-      expired,
-      expiringSoon
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch stock alerts' });
-  }
-});
-
 // Get inventory summary
 router.get('/summary', async (req, res) => {
   try {
     const [
-      totalProducts,
-      totalValue,
-      lowStockCount,
-      outOfStockCount,
+      totalItems,
+      totalInventory,
       recentMovements
     ] = await Promise.all([
-      prisma.product.count({
+      prisma.item.count({
         where: { isActive: true }
       }),
-      prisma.product.aggregate({
-        where: { isActive: true },
+      prisma.inventory.aggregate({
         _sum: {
           currentStock: true
-        }
-      }),
-      prisma.product.count({
-        where: {
-          isActive: true,
-          currentStock: {
-            lte: prisma.product.fields.minStockLevel
-          }
-        }
-      }),
-      prisma.product.count({
-        where: {
-          isActive: true,
-          currentStock: 0
         }
       }),
       prisma.inventoryLog.findMany({
         take: 10,
         orderBy: { createdAt: 'desc' },
         include: {
-          product: true,
+          item: true,
           user: true
         }
       })
     ]);
 
     res.json({
-      totalProducts,
-      totalValue: totalValue._sum.currentStock || 0,
-      lowStockCount,
-      outOfStockCount,
+      totalItems,
+      totalInventory: totalInventory._sum.currentStock || 0,
       recentMovements
     });
   } catch (error) {
