@@ -61,6 +61,20 @@ install_system_dependencies() {
 start_test_server() {
     log "Starting test server on port $TEST_PORT..."
     
+    # Check if test server is already running
+    if pgrep -f "test-server.js" > /dev/null 2>&1; then
+        log "Test server is already running, stopping it first..."
+        stop_test_server
+        sleep 2
+    fi
+    
+    # Check if port is already in use
+    if lsof -i :$TEST_PORT > /dev/null 2>&1; then
+        log "Port $TEST_PORT is already in use, killing processes on that port..."
+        sudo lsof -ti:$TEST_PORT | xargs kill -9 2>/dev/null || true
+        sleep 2
+    fi
+    
     # Create a simple HTTP server using Node.js
     cat > "$SCRIPT_DIR/test-server.js" << 'EOF'
 const http = require('http');
@@ -215,6 +229,7 @@ show_usage() {
     echo "  restart      - Restart test server"
     echo "  status       - Show status"
     echo "  cleanup      - Stop and clean up"
+    echo "  killall      - Force kill all test processes"
     echo ""
     echo "Examples:"
     echo "  $0 development setup         # Development mode, complete setup"
@@ -267,8 +282,16 @@ main() {
         cleanup)
             log "=== Cleaning up Test Server ==="
             stop_test_server
-            rm -f "$TEST_LOG"
+            rm -f "$TEST_LOG" "$TEST_PID_FILE"
             log "=== Cleanup Complete ==="
+            ;;
+        killall)
+            log "=== Force killing all test processes ==="
+            pkill -f test-server.js 2>/dev/null || true
+            pkill -f "node.*test-server" 2>/dev/null || true
+            sudo lsof -ti:$TEST_PORT | xargs kill -9 2>/dev/null || true
+            rm -f "$TEST_LOG" "$TEST_PID_FILE" "$SCRIPT_DIR/test-server.js"
+            log "=== All test processes killed ==="
             ;;
         *)
             show_usage
