@@ -123,3 +123,8 @@ pharmastock-backup/
 .env.test.local
 .env.production.local
 node_modules
+
+# Build artifacts
+build/
+*.tar.gz
+pharmastock-*.tar.gz
