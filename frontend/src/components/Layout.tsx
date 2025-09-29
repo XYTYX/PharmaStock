@@ -15,10 +15,15 @@ interface LayoutProps {
   children: ReactNode;
 }
 
-const navigation = [
+// Base navigation items available to all users
+const baseNavigation = [
   { nameKey: 'nav.dashboard', href: '/dashboard', icon: HomeIcon },
   { nameKey: 'nav.currentStock', href: '/current-stock', icon: ChartBarIcon },
   { nameKey: 'nav.dispensationTracking', href: '/dispensation-tracking', icon: ChartBarIcon },
+];
+
+// Admin-only navigation items
+const adminNavigation = [
   { nameKey: 'nav.users', href: '/users', icon: UserGroupIcon },
 ];
 
@@ -27,6 +32,12 @@ export default function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuthStore();
   const { t, language, setLanguage } = useLanguage();
   const location = useLocation();
+
+  // Check if current user is admin
+  const isAdmin = user?.role === 'ADMIN';
+  
+  // Combine navigation based on user role
+  const navigation = isAdmin ? [...baseNavigation, ...adminNavigation] : baseNavigation;
 
   return (
     <div className="min-h-screen bg-gray-50">

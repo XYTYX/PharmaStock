@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { inventoryApi } from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const logTypeLabels = {
   PURCHASE: 'Achat',
@@ -13,6 +14,7 @@ const logTypeLabels = {
 };
 
 export default function DispensationTrackingPage() {
+  const { t } = useLanguage();
   const [filter, setFilter] = useState({
     search: '',
     reason: '',
@@ -57,7 +59,7 @@ export default function DispensationTrackingPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Chargement...</div>
+        <div className="text-lg">{t('dispensation.loading')}</div>
       </div>
     );
   }
@@ -65,7 +67,7 @@ export default function DispensationTrackingPage() {
   if (error) {
     return (
       <div className="text-red-600 text-center py-8">
-        Erreur lors du chargement des logs d'inventaire
+        {t('dispensation.error')}
       </div>
     );
   }
@@ -73,9 +75,9 @@ export default function DispensationTrackingPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Suivi des Dispensations</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('nav.dispensationTracking')}</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Historique des mouvements d'inventaire et dispensations
+          {t('dispensation.subtitle')}
         </p>
       </div>
 
@@ -85,25 +87,25 @@ export default function DispensationTrackingPage() {
           <div className="text-2xl font-bold text-green-600">
             {logs.filter((log: any) => log.reason === 'PURCHASE').length}
           </div>
-          <div className="text-sm text-gray-500">Achats</div>
+          <div className="text-sm text-gray-500">{t('dispensation.purchases')}</div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="text-2xl font-bold text-blue-600">
             {logs.filter((log: any) => log.reason === 'DISPENSATION').length}
           </div>
-          <div className="text-sm text-gray-500">Dispensations</div>
+          <div className="text-sm text-gray-500">{t('dispensation.dispensations')}</div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="text-2xl font-bold text-yellow-600">
             {logs.filter((log: any) => log.reason === 'ADJUSTMENT').length}
           </div>
-          <div className="text-sm text-gray-500">Ajustements</div>
+          <div className="text-sm text-gray-500">{t('dispensation.adjustments')}</div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="text-2xl font-bold text-red-600">
             {logs.filter((log: any) => log.reason === 'EXPIRED' || log.reason === 'DAMAGED').length}
           </div>
-          <div className="text-sm text-gray-500">Pertes</div>
+          <div className="text-sm text-gray-500">{t('dispensation.losses')}</div>
         </div>
       </div>
 
@@ -112,11 +114,11 @@ export default function DispensationTrackingPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Rechercher
+              {t('dispensation.search')}
             </label>
             <input
               type="text"
-              placeholder="Nom de l'article..."
+              placeholder={t('dispensation.searchPlaceholder')}
               value={filter.search}
               onChange={(e) => setFilter({ ...filter, search: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -125,27 +127,27 @@ export default function DispensationTrackingPage() {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Type de mouvement
+              {t('dispensation.movementType')}
             </label>
             <select
               value={filter.reason}
               onChange={(e) => setFilter({ ...filter, reason: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Tous les types</option>
-              <option value="PURCHASE">Achat</option>
-              <option value="DISPENSATION">Dispensation</option>
-              <option value="ADJUSTMENT">Ajustement</option>
-              <option value="TRANSFER">Transfert</option>
-              <option value="EXPIRED">Expiré</option>
-              <option value="DAMAGED">Endommagé</option>
-              <option value="RETURN">Retour</option>
+              <option value="">{t('dispensation.allTypes')}</option>
+              <option value="PURCHASE">{t('dispensation.purchase')}</option>
+              <option value="DISPENSATION">{t('dispensation.dispensation')}</option>
+              <option value="ADJUSTMENT">{t('dispensation.adjustment')}</option>
+              <option value="TRANSFER">{t('dispensation.transfer')}</option>
+              <option value="EXPIRED">{t('dispensation.expired')}</option>
+              <option value="DAMAGED">{t('dispensation.damaged')}</option>
+              <option value="RETURN">{t('dispensation.return')}</option>
             </select>
           </div>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date de début
+              {t('dispensation.dateFrom')}
             </label>
             <input
               type="date"
@@ -157,7 +159,7 @@ export default function DispensationTrackingPage() {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date de fin
+              {t('dispensation.dateTo')}
             </label>
             <input
               type="date"
@@ -176,22 +178,22 @@ export default function DispensationTrackingPage() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
+                  {t('dispensation.date')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Article
+                  {t('dispensation.item')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
+                  {t('dispensation.type')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Quantité
+                  {t('dispensation.quantity')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Utilisateur
+                  {t('dispensation.user')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Notes
+                  {t('dispensation.notes')}
                 </th>
               </tr>
             </thead>
@@ -230,7 +232,7 @@ export default function DispensationTrackingPage() {
         
         {logs.length === 0 && (
           <div className="text-center py-8 text-gray-500">
-            Aucun mouvement d'inventaire trouvé avec les critères sélectionnés
+            {t('dispensation.noMovements')}
           </div>
         )}
       </div>

@@ -18,7 +18,7 @@ export default function LoginPage() {
       login(data.user, data.token);
     },
     onError: (error: any) => {
-      setError(error.response?.data?.error || 'Login failed');
+      setError(error.response?.data?.error || t('login.loginFailed'));
     },
   });
 
@@ -46,10 +46,10 @@ export default function LoginPage() {
               </label>
               <input
                 {...register('username', { 
-                  required: 'Username is required',
+                  required: t('login.usernameRequired'),
                   minLength: {
                     value: 3,
-                    message: 'Username must be at least 3 characters'
+                    message: t('login.usernameMinLength')
                   }
                 })}
                 type="text"
@@ -66,7 +66,7 @@ export default function LoginPage() {
                 {t('login.password')}
               </label>
               <input
-                {...register('password', { required: 'Password is required' })}
+                {...register('password', { required: t('login.passwordRequired') })}
                 type="password"
                 autoComplete="current-password"
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
@@ -98,9 +98,9 @@ export default function LoginPage() {
             <div className="text-sm text-gray-600">
               <p className="font-medium">{t('login.credentials')}</p>
               <ul className="mt-2 space-y-1 text-xs">
-                <li>Admin: admin / admin123</li>
-                <li>Pharmacist: pharmacist / pharmacist123</li>
-                <li>Technician: tech / tech123</li>
+                <li>{t('login.adminCredentials')}</li>
+                <li>{t('login.pharmacistCredentials')}</li>
+                <li>{t('login.technicianCredentials')}</li>
               </ul>
             </div>
           </div>

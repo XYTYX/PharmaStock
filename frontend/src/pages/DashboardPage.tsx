@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { inventoryApi } from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
 import { 
   CubeIcon, 
   ExclamationTriangleIcon,
@@ -7,6 +8,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 export default function DashboardPage() {
+  const { t } = useLanguage();
   const { data: inventorySummary, isLoading } = useQuery({
     queryKey: ['inventory-summary'],
     queryFn: inventoryApi.getInventorySummary,
@@ -20,32 +22,32 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="text-lg">{t('dashboard.loading')}</div>
       </div>
     );
   }
 
   const stats = [
     {
-      name: 'Total Items',
+      name: t('dashboard.totalItems'),
       value: inventorySummary?.totalItems || 0,
-      change: 'Active inventory',
+      change: t('dashboard.totalItemsDesc'),
       icon: CubeIcon,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
     },
     {
-      name: 'Total Stock',
+      name: t('dashboard.totalStock'),
       value: inventorySummary?.totalInventory || 0,
-      change: 'Units in stock',
+      change: t('dashboard.totalStockDesc'),
       icon: ChartBarIcon,
       color: 'text-green-600',
       bgColor: 'bg-green-100',
     },
     {
-      name: 'Recent Movements',
+      name: t('dashboard.recentMovementsTitle'),
       value: inventoryLogs?.logs?.length || 0,
-      change: 'Last 10 movements',
+      change: t('dashboard.recentMovementsDesc'),
       icon: ExclamationTriangleIcon,
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-100',
@@ -57,9 +59,9 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Tableau de bord</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('nav.dashboard')}</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Vue d'ensemble de l'inventaire pharmaceutique
+          {t('dashboard.subtitle')}
         </p>
       </div>
 
@@ -97,10 +99,10 @@ export default function DashboardPage() {
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
         <div className="px-4 py-5 sm:px-6">
           <h3 className="text-lg leading-6 font-medium text-gray-900">
-            Mouvements récents
+            {t('dashboard.recentMovements')}
           </h3>
           <p className="mt-1 max-w-2xl text-sm text-gray-500">
-            Derniers mouvements d'inventaire
+            {t('dashboard.recentMovementsSubtitle')}
           </p>
         </div>
         <div className="border-t border-gray-200">
