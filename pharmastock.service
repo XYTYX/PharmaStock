@@ -1,0 +1,38 @@
+[Unit]
+Description=PharmaStock Application
+Documentation=https://github.com/XYTYX/PharmaStock
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+User=root
+Group=root
+WorkingDirectory=/opt/pharmastock
+ExecStart=/opt/pharmastock/pharmastock-run.sh start
+ExecStop=/opt/pharmastock/pharmastock-run.sh stop
+ExecReload=/opt/pharmastock/pharmastock-run.sh restart
+PIDFile=/var/run/pharmastock/backend.pid
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=pharmastock
+
+# Environment variables
+Environment=NODE_ENV=production
+Environment=PORT=3000
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/pharmastock /var/log/pharmastock /var/run/pharmastock
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target
