@@ -151,6 +151,72 @@ router.post('/adjust', async (req, res) => {
   }
 });
 
+// Get current stock
+router.get('/stock', async (req, res) => {
+  try {
+    const {
+      page = '1',
+      limit = '50',
+      search,
+      sortBy = 'item.name',
+      sortOrder = 'asc'
+    } = req.query;
+
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const skip = (pageNum - 1) * limitNum;
+
+    const where: any = {
+      item: {
+        isActive: true
+      }
+    };
+
+    if (search) {
+      where.item.name = {
+        contains: search as string
+      };
+    }
+
+    const orderBy: any = {};
+    if (sortBy === 'item.name') {
+      orderBy.item = { name: sortOrder };
+    } else if (sortBy === 'currentStock') {
+      orderBy.currentStock = sortOrder;
+    } else if (sortBy === 'item.form') {
+      orderBy.item = { form: sortOrder };
+    } else {
+      orderBy[sortBy as string] = sortOrder;
+    }
+
+    const [inventory, total] = await Promise.all([
+      prisma.inventory.findMany({
+        where,
+        include: {
+          item: true
+        },
+        orderBy,
+        skip,
+        take: limitNum
+      }),
+      prisma.inventory.count({ where })
+    ]);
+
+    res.json({
+      inventory,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching current stock:', error);
+    res.status(500).json({ error: 'Failed to fetch current stock' });
+  }
+});
+
 // Get inventory summary
 router.get('/summary', async (req, res) => {
   try {

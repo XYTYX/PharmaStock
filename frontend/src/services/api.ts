@@ -86,6 +86,11 @@ export const inventoryApi = {
     return response.data;
   },
 
+  getCurrentStock: async (params?: any) => {
+    const response = await api.get('/inventory/stock', { params });
+    return response.data;
+  },
+
   createInventoryAdjustment: async (data: any) => {
     const response = await api.post('/inventory/adjust', data);
     return response.data;

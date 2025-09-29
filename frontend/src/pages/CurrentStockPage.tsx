@@ -7,28 +7,20 @@ export default function CurrentStockPage() {
   const { t } = useLanguage();
   const [filter, setFilter] = useState({
     search: '',
-    reason: '',
-    startDate: '',
-    endDate: ''
+    sortBy: 'item.name',
+    sortOrder: 'asc'
   });
 
-  const { data: inventoryData, isLoading, error } = useQuery({
-    queryKey: ['inventory-logs', filter],
-    queryFn: () => inventoryApi.getInventoryLogs({
-      search: filter.search,
-      reason: filter.reason || undefined,
-      startDate: filter.startDate || undefined,
-      endDate: filter.endDate || undefined
+  const { data: stockData, isLoading, error } = useQuery({
+    queryKey: ['current-stock', filter],
+    queryFn: () => inventoryApi.getCurrentStock({
+      search: filter.search || undefined,
+      sortBy: filter.sortBy,
+      sortOrder: filter.sortOrder
     })
   });
 
-  const { data: summaryData } = useQuery({
-    queryKey: ['inventory-summary'],
-    queryFn: () => inventoryApi.getInventorySummary()
-  });
-
-  const logs = inventoryData?.logs || [];
-  const summary = summaryData || {};
+  const inventory = stockData?.inventory || [];
 
   if (isLoading) {
     return (
@@ -39,9 +31,13 @@ export default function CurrentStockPage() {
   }
 
   if (error) {
+    console.error('Error loading inventory data:', error);
     return (
       <div className="text-red-600 text-center py-8">
-        {t('inventory.error')}
+        <div className="text-lg font-medium">{t('inventory.error')}</div>
+        <div className="text-sm mt-2">
+          {error instanceof Error ? error.message : 'Unknown error occurred'}
+        </div>
       </div>
     );
   }
@@ -51,7 +47,7 @@ export default function CurrentStockPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">{t('nav.currentStock')}</h1>
         <p className="mt-1 text-sm text-gray-500">
-          {t('inventory.subtitle')}
+          {t('inventory.currentStock')} - {t('inventory.subtitle')}
         </p>
       </div>
 
@@ -59,27 +55,27 @@ export default function CurrentStockPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="text-2xl font-bold text-gray-900">
-            {summary.totalItems || 0}
+            {inventory.length}
           </div>
           <div className="text-sm text-gray-500">{t('inventory.totalItems')}</div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="text-2xl font-bold text-blue-600">
-            {summary.totalInventory || 0}
+            {inventory.reduce((sum: number, item: any) => sum + item.currentStock, 0)}
           </div>
           <div className="text-sm text-gray-500">{t('inventory.totalStock')}</div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="text-2xl font-bold text-green-600">
-            {logs.length}
+            {inventory.filter((item: any) => item.currentStock > 0).length}
           </div>
-          <div className="text-sm text-gray-500">{t('inventory.recentMovements')}</div>
+          <div className="text-sm text-gray-500">{t('inventory.inStock')}</div>
         </div>
       </div>
 
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {t('inventory.search')}
@@ -95,46 +91,31 @@ export default function CurrentStockPage() {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('inventory.movementType')}
+              {t('inventory.sortBy')}
             </label>
             <select
-              value={filter.reason}
-              onChange={(e) => setFilter({ ...filter, reason: e.target.value })}
+              value={filter.sortBy}
+              onChange={(e) => setFilter({ ...filter, sortBy: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">{t('inventory.allTypes')}</option>
-              <option value="PURCHASE">{t('inventory.purchase')}</option>
-              <option value="DISPENSATION">{t('inventory.dispensation')}</option>
-              <option value="ADJUSTMENT">{t('inventory.adjustment')}</option>
-              <option value="TRANSFER">{t('inventory.transfer')}</option>
-              <option value="EXPIRED">{t('inventory.expired')}</option>
-              <option value="DAMAGED">{t('inventory.damaged')}</option>
-              <option value="RETURN">{t('inventory.return')}</option>
+              <option value="item.name">{t('inventory.item')}</option>
+              <option value="currentStock">{t('inventory.currentStock')}</option>
+              <option value="item.form">{t('inventory.form')}</option>
             </select>
           </div>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('inventory.startDate')}
+              {t('inventory.sortOrder')}
             </label>
-            <input
-              type="date"
-              value={filter.startDate}
-              onChange={(e) => setFilter({ ...filter, startDate: e.target.value })}
+            <select
+              value={filter.sortOrder}
+              onChange={(e) => setFilter({ ...filter, sortOrder: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('inventory.endDate')}
-            </label>
-            <input
-              type="date"
-              value={filter.endDate}
-              onChange={(e) => setFilter({ ...filter, endDate: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
+              <option value="asc">{t('inventory.ascending')}</option>
+              <option value="desc">{t('inventory.descending')}</option>
+            </select>
           </div>
         </div>
       </div>
@@ -146,59 +127,71 @@ export default function CurrentStockPage() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('inventory.date')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {t('inventory.item')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('inventory.type')}
+                  {t('inventory.description')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('inventory.quantity')}
+                  {t('inventory.form')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('inventory.user')}
+                  {t('inventory.currentStock')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('inventory.notes')}
+                  {t('inventory.stockLevel')}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {t('inventory.expiryDate')}
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {logs.map((log: any) => (
-                <tr key={log.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(log.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {log.item?.name || 'Article supprimé'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {log.reason}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {log.totalAmount}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {log.user?.firstName} {log.user?.lastName}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {log.notes || '-'}
-                  </td>
-                </tr>
-              ))}
+              {inventory.map((item: any) => {
+                const getStockLevel = (stock: number) => {
+                  if (stock === 0) return { text: t('inventory.outOfStock'), color: 'bg-red-100 text-red-800' };
+                  if (stock <= 10) return { text: t('inventory.lowStock'), color: 'bg-yellow-100 text-yellow-800' };
+                  return { text: t('inventory.inStock'), color: 'bg-green-100 text-green-800' };
+                };
+                
+                const stockLevel = getStockLevel(item.currentStock);
+                
+                return (
+                  <tr key={item.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {item.item?.name || 'Article supprimé'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 max-w-xs truncate">
+                        {item.item?.description || '-'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {item.item?.form || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <span className="font-medium">{item.currentStock}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stockLevel.color}`}>
+                        {stockLevel.text}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {item.item?.expiryDate || '-'}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
         
-        {logs.length === 0 && (
+        {inventory.length === 0 && (
           <div className="text-center py-8 text-gray-500">
-            {t('inventory.noMovements')}
+            {t('inventory.noStock')}
           </div>
         )}
       </div>
