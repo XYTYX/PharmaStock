@@ -14,10 +14,6 @@ FRONTEND_PORT=3001
 BACKEND_PORT=3000
 ENVIRONMENT="${1:-development}"
 
-# PID files
-BACKEND_PID_FILE="$SCRIPT_DIR/backend.pid"
-FRONTEND_PID_FILE="$SCRIPT_DIR/frontend.pid"
-
 # Log files
 BACKEND_LOG="$SCRIPT_DIR/backend.log"
 FRONTEND_LOG="$SCRIPT_DIR/frontend.log"
@@ -413,9 +409,6 @@ stop_services() {
         systemctl disable pharmastock-backend pharmastock-frontend 2>/dev/null || true
         log "Services stopped with systemd"
     fi
-    
-    # Clean up PID files
-    rm -f "$BACKEND_PID_FILE" "$FRONTEND_PID_FILE"
     
     log "Services stopped"
 }

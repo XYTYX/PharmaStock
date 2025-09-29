@@ -2,11 +2,6 @@ import { ReactNode, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   HomeIcon, 
-  CubeIcon, 
-  TagIcon, 
-  TruckIcon, 
-  ShoppingCartIcon, 
-  CurrencyDollarIcon,
   ChartBarIcon,
   UserGroupIcon,
   Bars3Icon,
@@ -22,16 +17,8 @@ interface LayoutProps {
 
 const navigation = [
   { nameKey: 'nav.dashboard', href: '/dashboard', icon: HomeIcon },
-  { nameKey: 'nav.products', href: '/products', icon: CubeIcon },
-  { nameKey: 'nav.categories', href: '/categories', icon: TagIcon },
-  { nameKey: 'nav.suppliers', href: '/suppliers', icon: TruckIcon },
-  { nameKey: 'nav.purchaseOrders', href: '/purchase-orders', icon: ShoppingCartIcon },
-  { nameKey: 'nav.dispensations', href: '/dispensations', icon: CurrencyDollarIcon },
-  { nameKey: 'nav.medicationAvailability', href: '/medication-availability', icon: ChartBarIcon },
   { nameKey: 'nav.currentStock', href: '/current-stock', icon: ChartBarIcon },
   { nameKey: 'nav.dispensationTracking', href: '/dispensation-tracking', icon: ChartBarIcon },
-  { nameKey: 'nav.inventory', href: '/inventory', icon: ChartBarIcon },
-  { nameKey: 'nav.reports', href: '/reports', icon: ChartBarIcon },
   { nameKey: 'nav.users', href: '/users', icon: UserGroupIcon },
 ];
 
@@ -127,12 +114,12 @@ export default function Layout({ children }: LayoutProps) {
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value as 'en' | 'fr')}
-                  className="appearance-none bg-transparent border-none text-sm text-gray-700 hover:text-gray-900 focus:outline-none cursor-pointer"
+                  className="appearance-none bg-transparent border-none text-sm text-gray-700 hover:text-gray-900 focus:outline-none cursor-pointer pr-6 pl-2 py-1"
                 >
                   <option value="en">🇺🇸 EN</option>
                   <option value="fr">🇫🇷 FR</option>
                 </select>
-                <LanguageIcon className="absolute right-0 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                <LanguageIcon className="absolute right-1 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               </div>
               
               <div className="text-sm text-gray-700">

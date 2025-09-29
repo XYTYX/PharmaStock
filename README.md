@@ -8,7 +8,6 @@ A comprehensive hospital pharmacy inventory management system built with React a
 - **Medicine Type Tracking**: Categorize medicines by type (tablet, gel capsule, gel liquid)
 - **Expiration Tracking**: Monitor medication expiration dates
 - **Supplier Management**: Manage vendor relationships and contacts
-- **Purchase Orders**: Create and track purchase orders
 - **Dispensations**: Record and track medicine dispensations to patients
 - **User Management**: Role-based access control with username authentication
 - **Reporting**: Comprehensive analytics and reports
