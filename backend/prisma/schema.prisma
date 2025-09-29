@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  firstName String
+  lastName  String
+  role      String   @default("TECHNICIAN")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  logs InventoryLog[]
+
+  @@map("users")
+}
+
+model Item {
+  id           String         @id @default(cuid())
+  name         String
+  description  String?
+  form         String?        @default("TABLET") // TABLET, GEL_CAPSULE, CAPSULE, GEL, EYE_DROPS, POWDER
+  isActive     Boolean        @default(true)
+  expiryDate   String? // Format: MM-YYYY
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  InventoryLog InventoryLog[]
+  Inventory    Inventory[]
+
+  @@map("items")
+}
+
+model InventoryLog {
+  id                 String   @id @default(cuid())
+  userId             String
+  patientName        String?
+  patientId          String?
+  prescriptionNumber String?
+  itemId             String
+  totalAmount        Float
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  reason             String // PURCHASE, DISPENSATION, ADJUSTMENT, TRANSFER, EXPIRED, DAMAGED, RETURN
+  isItemActive       Boolean? // Indicates if the item was turned on or off during this log entry
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+  item Item @relation(fields: [itemId], references: [id])
+  patient Patient? @relation(fields: [patientId], references: [id])
+
+  @@map("inventory_log")
+}
+
+model Inventory {
+  id            String   @id @default(cuid())
+  itemId        String
+  currentStock  Int
+  createdAt     DateTime @default(now())
+
+  // Relations
+  item Item @relation(fields: [itemId], references: [id])
+
+  @@map("inventory")
+}
+
+model Patient {
+  id           String   @id @default(cuid())
+  patientName  String
+  patientId    String
+
+  // Relations
+  inventoryLogs InventoryLog[]
+
+  @@map("patients")
+}
