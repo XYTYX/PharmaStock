@@ -367,10 +367,10 @@ export default function DispensationsPage() {
                       {log.item?.name}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      {log.item?.form && translateForm(log.item.form)}
+                      {log.item?.form && translateForm(log.item.form) + " | "}
                       {log.item?.expiryDate && (
                         <span className={isExpired(log.item.expiryDate) ? 'text-red-600 font-medium' : ''}>
-                          {` | ${log.item.expiryDate}`}
+                          {log.item.expiryDate}
                         </span>
                       )}
                     </div>
@@ -456,7 +456,7 @@ export default function DispensationsPage() {
                         {medication.name}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
-                        {translateForm(medication.form)} | 
+                        {translateForm(medication.form) + " | "}
                         <span className={isExpired(medication.expiryDate) ? 'text-red-600 font-medium' : ''}>
                           {medication.expiryDate}
                         </span>
