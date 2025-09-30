@@ -369,14 +369,12 @@ router.put('/items/:id', requireRole(['ADMIN']), async (req, res) => {
 
     const item = await prisma.item.update({
       where: { id },
-      data,
-      include: {
-        Inventory: true
-      }
+      data
     });
 
     res.json({ item });
   } catch (error) {
+    console.error('Error updating item:', error);
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: 'Validation error', details: error.errors });
     }
@@ -444,6 +442,7 @@ router.put('/items/:id/stock', requireRole(['ADMIN']), async (req, res) => {
 
     res.json({ stock: result });
   } catch (error) {
+    console.error('Error updating item stock:', error);
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: 'Validation error', details: error.errors });
     }

@@ -69,6 +69,10 @@ export default function CurrentStockPage() {
       queryClient.invalidateQueries({ queryKey: ['current-stock-all'] });
       setIsModalOpen(false);
       setEditingItem(null);
+    },
+    onError: (error) => {
+      console.error('Error updating item:', error);
+      alert('Failed to update item. Please try again.');
     }
   });
 
@@ -77,6 +81,10 @@ export default function CurrentStockPage() {
       inventoryApi.updateItemStock(id, currentStock),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['current-stock-all'] });
+    },
+    onError: (error) => {
+      console.error('Error updating stock:', error);
+      alert('Failed to update stock. Please try again.');
     }
   });
 
@@ -93,8 +101,8 @@ export default function CurrentStockPage() {
 
   const handleSubmit = (formData: any) => {
     if (editingItem) {
-      // Update item details
-      const { currentStock, ...itemData } = formData;
+      // Update item details (exclude stock-related fields)
+      const { currentStock, initialStock, ...itemData } = formData;
       updateItemMutation.mutate({ id: editingItem.item.id, data: itemData });
       
       // Update stock if it changed
