@@ -15,12 +15,6 @@ import { authenticateToken } from './middleware/auth';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Handle /pharmacy prefix for production routing
-app.use('/pharmacy', (req, res, next) => {
-  // Remove /pharmacy prefix from the request
-  req.url = req.url.replace('/pharmacy', '');
-  next();
-});
 
 // Initialize Prisma client
 export const prisma = new PrismaClient();
@@ -40,9 +34,9 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/inventory', authenticateToken, inventoryRoutes);
-app.use('/api/users', authenticateToken, userRoutes);
+app.use('/auth', authRoutes);
+app.use('/inventory', authenticateToken, inventoryRoutes);
+app.use('/users', authenticateToken, userRoutes);
 
 // Error handling middleware
 app.use(errorHandler);

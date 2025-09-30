@@ -9,8 +9,9 @@ module.exports = {
       env: {
         NODE_ENV: 'development',
         PORT: 3000,
-        DATABASE_URL: 'file:./prisma/dev.db',
-        FRONTEND_URL: 'http://localhost:3001'
+        DATABASE_URL: 'file:/home/aidan/new_sight/PharmaStock/backend/prisma/dev.db',
+        FRONTEND_URL: 'http://localhost:3001',
+        JWT_SECRET: 'your-super-secret-jwt-key-change-this-in-production'
       },
       watch: false,
       instances: 1,
