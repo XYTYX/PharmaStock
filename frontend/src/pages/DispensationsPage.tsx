@@ -104,6 +104,24 @@ export default function DispensationsPage() {
     return item?.item?.id || null;
   };
 
+  // Get filtered expiry dates based on selected form
+  const getFilteredExpiryDates = (medicationName: string, form: string) => {
+    if (!stockData?.inventory || !form) return [];
+    
+    const expiryDates = new Set<string>();
+    
+    stockData.inventory.forEach((inv: any) => {
+      if (inv.item?.name === medicationName && 
+          inv.item?.form === form && 
+          inv.item?.expiryDate && 
+          inv.currentStock > 0) {
+        expiryDates.add(inv.item.expiryDate);
+      }
+    });
+    
+    return Array.from(expiryDates).sort();
+  };
+
   // Filter medications based on search
   const filteredMedications = useMemo(() => {
     if (!searchTerm) return medications;
@@ -146,7 +164,10 @@ export default function DispensationsPage() {
   const handleMedicationClick = (medication: Medication) => {
     setSelectedMedication(medication);
     const firstForm = medication.forms[0] || '';
-    const firstExpiryDate = medication.expiryDates[0] || '';
+    
+    // Get filtered expiry dates for the first form
+    const filteredExpiryDates = getFilteredExpiryDates(medication.name, firstForm);
+    const firstExpiryDate = filteredExpiryDates[0] || '';
     
     // Find the correct item ID for the first form and expiry date combination
     const correctItemId = findItemId(medication.name, firstForm, firstExpiryDate);
@@ -430,10 +451,19 @@ export default function DispensationsPage() {
                         key={form}
                         type="button"
                         onClick={() => {
-                          setDispensationForm(prev => ({ ...prev, form }));
+                          // Get filtered expiry dates for the new form
+                          const filteredExpiryDates = getFilteredExpiryDates(selectedMedication.name, form);
+                          const firstExpiryDate = filteredExpiryDates[0] || '';
+                          
+                          setDispensationForm(prev => ({ 
+                            ...prev, 
+                            form,
+                            expiryDate: firstExpiryDate
+                          }));
+                          
                           // Update item ID when form changes
-                          if (selectedMedication && dispensationForm.expiryDate) {
-                            const newItemId = findItemId(selectedMedication.name, form, dispensationForm.expiryDate);
+                          if (selectedMedication && firstExpiryDate) {
+                            const newItemId = findItemId(selectedMedication.name, form, firstExpiryDate);
                             if (newItemId) {
                               setDispensationForm(prev => ({ ...prev, itemId: newItemId }));
                             }
@@ -457,29 +487,35 @@ export default function DispensationsPage() {
                     {t('dispensations.expiryDate')}
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {selectedMedication.expiryDates.map(date => (
-                      <button
-                        key={date}
-                        type="button"
-                        onClick={() => {
-                          setDispensationForm(prev => ({ ...prev, expiryDate: date }));
-                          // Update item ID when expiry date changes
-                          if (selectedMedication && dispensationForm.form) {
-                            const newItemId = findItemId(selectedMedication.name, dispensationForm.form, date);
-                            if (newItemId) {
-                              setDispensationForm(prev => ({ ...prev, itemId: newItemId }));
+                    {getFilteredExpiryDates(selectedMedication.name, dispensationForm.form).length > 0 ? (
+                      getFilteredExpiryDates(selectedMedication.name, dispensationForm.form).map(date => (
+                        <button
+                          key={date}
+                          type="button"
+                          onClick={() => {
+                            setDispensationForm(prev => ({ ...prev, expiryDate: date }));
+                            // Update item ID when expiry date changes
+                            if (selectedMedication && dispensationForm.form) {
+                              const newItemId = findItemId(selectedMedication.name, dispensationForm.form, date);
+                              if (newItemId) {
+                                setDispensationForm(prev => ({ ...prev, itemId: newItemId }));
+                              }
                             }
-                          }
-                        }}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
-                          dispensationForm.expiryDate === date
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {date}
-                      </button>
-                    ))}
+                          }}
+                          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
+                            dispensationForm.expiryDate === date
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {date}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="text-sm text-gray-500 italic">
+                        {t('dispensations.noExpiryDatesForForm')}
+                      </div>
+                    )}
                   </div>
                 </div>
 
