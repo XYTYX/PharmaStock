@@ -6,7 +6,10 @@ import {
   UserGroupIcon,
   Bars3Icon,
   XMarkIcon,
-  LanguageIcon
+  LanguageIcon,
+  CubeIcon,
+  BeakerIcon,
+  ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../store/authStore';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -18,8 +21,9 @@ interface LayoutProps {
 // Base navigation items available to all users
 const baseNavigation = [
   { nameKey: 'nav.dashboard', href: '/dashboard', icon: HomeIcon },
-  { nameKey: 'nav.currentStock', href: '/current-stock', icon: ChartBarIcon },
-  { nameKey: 'nav.dispensationTracking', href: '/dispensation-tracking', icon: ChartBarIcon },
+  { nameKey: 'nav.currentStock', href: '/current-stock', icon: CubeIcon },
+  { nameKey: 'nav.dispensations', href: '/dispensations', icon: BeakerIcon },
+  { nameKey: 'nav.dispensationTracking', href: '/dispensation-tracking', icon: ClipboardDocumentListIcon },
 ];
 
 // Admin-only navigation items

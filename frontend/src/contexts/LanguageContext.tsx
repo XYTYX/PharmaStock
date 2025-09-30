@@ -93,6 +93,9 @@ const translations = {
     'inventory.form.tablet': 'Tablet',
     'inventory.form.eyeDrops': 'Eye Drops',
     'inventory.form.cream': 'Cream',
+    'inventory.form.gelCapsule': 'Gel Capsule',
+    'inventory.form.gel': 'Gel',
+    'inventory.form.powder': 'Powder',
     
     // Dispensation
     'dispensation.subtitle': 'History of inventory movements and dispensations',
@@ -122,6 +125,39 @@ const translations = {
     'dispensation.expired': 'Expired',
     'dispensation.damaged': 'Damaged',
     'dispensation.return': 'Return',
+    
+    // Dispensations
+    'dispensations.subtitle': 'Record medication dispensations quickly and efficiently',
+    'dispensations.loading': 'Loading...',
+    'dispensations.error': 'Error loading dispensations data',
+    'dispensations.recentPrescriptions': 'Recent Prescribed Medications',
+    'dispensations.searchPlaceholder': 'Search medications...',
+    'dispensations.selectMedication': 'Select Medication to Dispense',
+    'dispensations.forms': 'forms',
+    'dispensations.noMedications': 'No medications available for dispensing',
+    'dispensations.dispenseMedication': 'Dispense Medication',
+    'dispensations.form': 'Form',
+    'dispensations.selectForm': 'Select Form',
+    'dispensations.expiryDate': 'Expiry Date',
+    'dispensations.selectExpiry': 'Select Expiry Date',
+    'dispensations.quantity': 'Quantity',
+    'dispensations.notes': 'Notes',
+    'dispensations.notesPlaceholder': 'Additional notes (optional)',
+    'dispensations.dispense': 'Add to Staging',
+    'dispensations.dispensedSuccessfully': 'Medications dispensed successfully',
+    'dispensations.errorDispensing': 'Error dispensing medications',
+    'dispensations.stagingArea': 'Staging Area',
+    'dispensations.stagingSubtitle': 'Review medications before dispensing',
+    'dispensations.noStagedItems': 'No medications staged',
+    'dispensations.totalItems': 'Total Items',
+    'dispensations.totalQuantity': 'Total Quantity',
+    'dispensations.confirmDispensation': 'Confirm Dispensation',
+    'dispensations.noStagedMedications': 'No medications staged for dispensation',
+    
+    // Common
+    'common.optional': 'Optional',
+    'common.cancel': 'Cancel',
+    'common.saving': 'Saving...',
     
     // Users
     'users.subtitle': 'Manage user accounts and permissions',
@@ -282,6 +318,9 @@ const translations = {
     'inventory.form.tablet': 'Comprimé',
     'inventory.form.eyeDrops': 'Collyre',
     'inventory.form.cream': 'Pommade',
+    'inventory.form.gelCapsule': 'Gélule Molle',
+    'inventory.form.gel': 'Gel',
+    'inventory.form.powder': 'Poudre',
     
     // Dispensation
     'dispensation.subtitle': 'Historique des mouvements d\'inventaire et dispensations',
@@ -311,6 +350,39 @@ const translations = {
     'dispensation.expired': 'Expiré',
     'dispensation.damaged': 'Endommagé',
     'dispensation.return': 'Retour',
+    
+    // Dispensations
+    'dispensations.subtitle': 'Enregistrer les dispensations de médicaments rapidement et efficacement',
+    'dispensations.loading': 'Chargement...',
+    'dispensations.error': 'Erreur lors du chargement des données de dispensation',
+    'dispensations.recentPrescriptions': 'Médicaments Prescrits Récents',
+    'dispensations.searchPlaceholder': 'Rechercher des médicaments...',
+    'dispensations.selectMedication': 'Sélectionner un Médicament à Dispenser',
+    'dispensations.forms': 'formes',
+    'dispensations.noMedications': 'Aucun médicament disponible pour la dispensation',
+    'dispensations.dispenseMedication': 'Dispenser le Médicament',
+    'dispensations.form': 'Forme',
+    'dispensations.selectForm': 'Sélectionner la Forme',
+    'dispensations.expiryDate': 'Date d\'Expiration',
+    'dispensations.selectExpiry': 'Sélectionner la Date d\'Expiration',
+    'dispensations.quantity': 'Quantité',
+    'dispensations.notes': 'Notes',
+    'dispensations.notesPlaceholder': 'Notes supplémentaires (optionnel)',
+    'dispensations.dispense': 'Ajouter à la Mise en Scène',
+    'dispensations.dispensedSuccessfully': 'Médicaments dispensés avec succès',
+    'dispensations.errorDispensing': 'Erreur lors de la dispensation des médicaments',
+    'dispensations.stagingArea': 'Zone de Mise en Scène',
+    'dispensations.stagingSubtitle': 'Examiner les médicaments avant la dispensation',
+    'dispensations.noStagedItems': 'Aucun médicament mis en scène',
+    'dispensations.totalItems': 'Articles Totaux',
+    'dispensations.totalQuantity': 'Quantité Totale',
+    'dispensations.confirmDispensation': 'Confirmer la Dispensation',
+    'dispensations.noStagedMedications': 'Aucun médicament mis en scène pour la dispensation',
+    
+    // Common
+    'common.optional': 'Optionnel',
+    'common.cancel': 'Annuler',
+    'common.saving': 'Enregistrement...',
     
     // Users
     'users.subtitle': 'Gérer les comptes utilisateurs et les permissions',

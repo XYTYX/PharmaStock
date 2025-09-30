@@ -40,8 +40,9 @@ async function main() {
 
   console.log('✅ Technician user created:', techUser.username);
 
-  // Create some sample items
+  // Create some sample items with different forms and expiry dates
   const items = await Promise.all([
+    // Paracetamol in different forms
     prisma.item.create({
       data: {
         name: 'Paracetamol 500mg',
@@ -53,6 +54,16 @@ async function main() {
     }),
     prisma.item.create({
       data: {
+        name: 'Paracetamol 500mg',
+        description: 'Pain relief and fever reducer',
+        form: 'CAPSULE',
+        isActive: true,
+        expiryDate: '08-2025'
+      }
+    }),
+    // Ibuprofen in different forms
+    prisma.item.create({
+      data: {
         name: 'Ibuprofen 400mg',
         description: 'Anti-inflammatory pain relief',
         form: 'TABLET',
@@ -62,11 +73,49 @@ async function main() {
     }),
     prisma.item.create({
       data: {
+        name: 'Ibuprofen 400mg',
+        description: 'Anti-inflammatory pain relief',
+        form: 'GEL_CAPSULE',
+        isActive: true,
+        expiryDate: '10-2025'
+      }
+    }),
+    // Amoxicillin
+    prisma.item.create({
+      data: {
         name: 'Amoxicillin 250mg',
         description: 'Antibiotic for bacterial infections',
         form: 'CAPSULE',
         isActive: true,
         expiryDate: '09-2025'
+      }
+    }),
+    // Additional medications
+    prisma.item.create({
+      data: {
+        name: 'Aspirin 100mg',
+        description: 'Blood thinner and pain relief',
+        form: 'TABLET',
+        isActive: true,
+        expiryDate: '03-2026'
+      }
+    }),
+    prisma.item.create({
+      data: {
+        name: 'Vitamin D3 1000IU',
+        description: 'Vitamin supplement',
+        form: 'CAPSULE',
+        isActive: true,
+        expiryDate: '07-2025'
+      }
+    }),
+    prisma.item.create({
+      data: {
+        name: 'Eye Drops 0.5%',
+        description: 'Lubricating eye drops',
+        form: 'EYE_DROPS',
+        isActive: true,
+        expiryDate: '11-2025'
       }
     })
   ]);

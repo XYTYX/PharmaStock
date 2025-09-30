@@ -431,7 +431,7 @@ show_status() {
         systemctl status pharmastock-backend --no-pager -l || true
         echo ""
         systemctl status pharmastock-frontend --no-pager -l || true
-    fi
+    fihello
 }
 
 # Function to cleanup

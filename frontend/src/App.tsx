@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import CurrentStockPage from './pages/CurrentStockPage';
 import DispensationTrackingPage from './pages/DispensationTrackingPage';
+import DispensationsPage from './pages/DispensationsPage';
 import UsersPage from './pages/UsersPage';
 
 // Protected route component for admin-only pages
@@ -41,6 +42,7 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/current-stock" element={<CurrentStockPage />} />
           <Route path="/dispensation-tracking" element={<DispensationTrackingPage />} />
+          <Route path="/dispensations" element={<DispensationsPage />} />
           <Route path="/users" element={
             <AdminRoute>
               <UsersPage />

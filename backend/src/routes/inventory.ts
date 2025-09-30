@@ -7,7 +7,10 @@ const router = express.Router();
 const inventoryAdjustmentSchema = z.object({
   itemId: z.string().min(1, 'Item is required'),
   quantity: z.number().int(),
-  reason: z.enum(['PURCHASE', 'DISPENSATION', 'ADJUSTMENT', 'TRANSFER', 'EXPIRED', 'DAMAGED', 'RETURN'])
+  reason: z.enum(['PURCHASE', 'DISPENSATION', 'ADJUSTMENT', 'TRANSFER', 'EXPIRED', 'DAMAGED', 'RETURN']),
+  patientName: z.string().optional(),
+  prescriptionNumber: z.string().optional(),
+  notes: z.string().optional()
 });
 
 // Get inventory logs
@@ -78,7 +81,7 @@ router.get('/logs', async (req, res) => {
 // Create inventory adjustment
 router.post('/adjust', async (req, res) => {
   try {
-    const { itemId, quantity, reason } = inventoryAdjustmentSchema.parse(req.body);
+    const { itemId, quantity, reason, patientName, prescriptionNumber, notes } = inventoryAdjustmentSchema.parse(req.body);
     const userId = (req as any).user.id;
 
     // Get current item
@@ -131,7 +134,9 @@ router.post('/adjust', async (req, res) => {
           userId,
           reason,
           totalAmount: quantity,
-          notes: `Stock adjustment: ${quantity > 0 ? '+' : ''}${quantity}`
+          patientName,
+          prescriptionNumber,
+          notes: notes || `Stock adjustment: ${quantity > 0 ? '+' : ''}${quantity}`
         },
         include: {
           item: true,
