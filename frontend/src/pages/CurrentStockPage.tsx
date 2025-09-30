@@ -462,11 +462,32 @@ function ItemModal({ item, onSubmit, onClose, isLoading }: ItemModalProps) {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <div className="mb-2">
-              <span className="text-xs text-gray-500">
-                {t('inventory.modal.adjustHint')}
-              </span>
-            </div>
+
+            {/* Quantity field - only show when creating new items */}
+            {!item && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('inventory.modal.initialQuantity')}
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.initialStock}
+                  onChange={(e) => setFormData({ ...formData, initialStock: parseInt(e.target.value) || 0 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0"
+                />
+              </div>
+            )}
+
+            {/* Adjustment hint */}
+            {item && (
+              <div className="mb-2">
+                <span className="text-xs text-gray-500">
+                  {t('inventory.modal.adjustHint')}
+                </span>
+              </div>
+            )}
 
             <div className="flex justify-end space-x-3 pt-4">
               <button
