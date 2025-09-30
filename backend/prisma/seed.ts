@@ -75,7 +75,7 @@ async function main() {
       data: {
         name: 'Ibuprofen 400mg',
         description: 'Anti-inflammatory pain relief',
-        form: 'GEL_CAPSULE',
+        form: 'CAPSULE',
         isActive: true,
         expiryDate: '10-2025'
       }

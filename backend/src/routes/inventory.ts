@@ -17,7 +17,7 @@ const inventoryAdjustmentSchema = z.object({
 const itemSchema = z.object({
   name: z.string().min(1, 'Item name is required'),
   description: z.string().optional(),
-  form: z.enum(['TABLET', 'GEL_CAPSULE', 'CAPSULE', 'GEL', 'EYE_DROPS', 'POWDER']).optional(),
+  form: z.enum(['TABLET', 'CAPSULE', 'GEL', 'EYE_DROPS', 'POWDER']).optional(),
   expiryDate: z.string().optional(),
   initialStock: z.number().int().min(0).optional()
 });
@@ -300,23 +300,24 @@ router.post('/items', requireRole(['ADMIN']), async (req, res) => {
         }
       });
 
-      // Create initial inventory if stock provided
-      if (initialStock && initialStock > 0) {
-        await tx.inventory.create({
-          data: {
-            itemId: item.id,
-            currentStock: initialStock
-          }
-        });
+      // Create initial inventory record (always create, even with 0 stock)
+      const stockAmount = initialStock || 0;
+      await tx.inventory.create({
+        data: {
+          itemId: item.id,
+          currentStock: stockAmount
+        }
+      });
 
-        // Create inventory log for initial stock
+      // Create inventory log for initial stock (only if stock > 0)
+      if (stockAmount > 0) {
         await tx.inventoryLog.create({
           data: {
             itemId: item.id,
             userId,
             reason: 'PURCHASE',
-            totalAmount: initialStock,
-            notes: `Initial stock: ${initialStock}`
+            totalAmount: stockAmount,
+            notes: `Initial stock: ${stockAmount}`
           }
         });
       }
@@ -326,6 +327,7 @@ router.post('/items', requireRole(['ADMIN']), async (req, res) => {
 
     res.status(201).json({ item: result });
   } catch (error) {
+    console.error('Error creating item:', error);
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: 'Validation error', details: error.errors });
     }

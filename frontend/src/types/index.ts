@@ -46,7 +46,7 @@ export interface Product {
   costPrice: number;
   currentStock: number;
   unit: string;
-  medicineType: 'TABLET' | 'GEL_CAPSULE' | 'CAPSULE' | 'GEL' | 'EYE_DROPS';
+  medicineType: 'TABLET' | 'CAPSULE' | 'GEL' | 'EYE_DROPS';
   isPrescription: boolean;
   requiresRefrigerator: boolean;
   isActive: boolean;

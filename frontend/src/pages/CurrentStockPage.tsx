@@ -39,6 +39,10 @@ export default function CurrentStockPage() {
       queryClient.invalidateQueries({ queryKey: ['current-stock-all'] });
       setIsModalOpen(false);
       setEditingItem(null);
+    },
+    onError: (error) => {
+      console.error('Error creating item:', error);
+      alert('Failed to create item. Please try again.');
     }
   });
 
@@ -81,7 +85,13 @@ export default function CurrentStockPage() {
         updateStockMutation.mutate({ id: editingItem.item.id, currentStock });
       }
     } else {
-      createItemMutation.mutate(formData);
+      // Ensure initialStock is a valid number for new items
+      const submitData = {
+        ...formData,
+        initialStock: formData.initialStock || 0
+      };
+      console.log('Creating item with data:', submitData);
+      createItemMutation.mutate(submitData);
     }
   };
 
@@ -435,10 +445,13 @@ function ItemModal({ item, onSubmit, onClose, isLoading }: ItemModalProps) {
                 type="number"
                 min="0"
                 value={item ? formData.currentStock : formData.initialStock}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  [item ? 'currentStock' : 'initialStock']: parseInt(e.target.value) || 0 
-                })}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 0;
+                  setFormData({ 
+                    ...formData, 
+                    [item ? 'currentStock' : 'initialStock']: value 
+                  });
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>

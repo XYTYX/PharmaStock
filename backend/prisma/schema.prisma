@@ -31,7 +31,7 @@ model Item {
   id           String         @id @default(cuid())
   name         String
   description  String?
-  form         String?        @default("TABLET") // TABLET, GEL_CAPSULE, CAPSULE, GEL, EYE_DROPS, POWDER
+  form         String?        @default("TABLET") // TABLET, CAPSULE, GEL, EYE_DROPS, POWDER
   isActive     Boolean        @default(true)
   expiryDate   String? // Format: MM-YYYY
   createdAt    DateTime       @default(now())
