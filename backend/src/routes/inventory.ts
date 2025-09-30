@@ -283,12 +283,14 @@ router.post('/items', requireRole(['ADMIN']), async (req, res) => {
     const existingItem = await prisma.item.findFirst({
       where: { 
         name: { equals: name },
+        form: form,
+        expiryDate: expiryDate,
         isActive: true
       }
     });
 
     if (existingItem) {
-      return res.status(400).json({ error: 'Item with this name already exists' });
+      return res.status(400).json({ error: 'Item with this name, form, and expiry date already exists' });
     }
 
     const result = await prisma.$transaction(async (tx) => {
