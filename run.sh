@@ -348,7 +348,7 @@ start_backend() {
         # Development: use PM2
         if command -v pm2 &> /dev/null; then
             log "Starting backend with PM2..."
-            pm2 start ecosystem.config.js --only pharmastock-backend
+            pm2 start "$SCRIPT_DIR/ecosystem.config.js" --only pharmastock-backend
             log "Backend started with PM2"
         else
             log "ERROR: PM2 not available for development mode"
@@ -371,7 +371,7 @@ start_frontend() {
         # Development: use PM2
         if command -v pm2 &> /dev/null; then
             log "Starting frontend with PM2..."
-            pm2 start ecosystem.config.js --only pharmastock-frontend
+            pm2 start "$SCRIPT_DIR/ecosystem.config.js" --only pharmastock-frontend
             log "Frontend started with PM2"
         else
             log "ERROR: PM2 not available for development mode"

@@ -1,9 +1,11 @@
+const path = require('path');
+
 module.exports = {
   apps: [
     {
       name: 'pharmastock-backend',
-      script: './backend/dist/index.js',
-      cwd: process.cwd(),
+      script: path.join(__dirname, 'backend/dist/index.js'),
+      cwd: __dirname,
       env: {
         NODE_ENV: 'development',
         PORT: 3000,
@@ -22,7 +24,7 @@ module.exports = {
       name: 'pharmastock-frontend',
       script: 'npm',
       args: 'run dev -- --port 3001 --host 0.0.0.0',
-      cwd: './frontend',
+      cwd: path.join(__dirname, 'frontend'),
       env: {
         NODE_ENV: 'development'
       },
