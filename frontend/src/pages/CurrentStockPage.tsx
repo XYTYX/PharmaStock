@@ -39,6 +39,16 @@ export default function CurrentStockPage() {
     return new Date(parseInt(year), parseInt(month) - 1, 1); // Month is 0-indexed
   };
 
+  // Function to check if a medication is expired
+  const isExpired = (dateStr: string) => {
+    if (!dateStr) return false;
+    const expiryDate = parseExpiryDate(dateStr);
+    const currentDate = new Date();
+    // Set current date to first day of current month for comparison
+    const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    return expiryDate < currentMonth;
+  };
+
   // Mutations for admin functionality
   const createItemMutation = useMutation({
     mutationFn: inventoryApi.createItem,
@@ -319,7 +329,11 @@ export default function CurrentStockPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {item.item?.form ? translateForm(item.item.form) : '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${
+                      isExpired(item.item?.expiryDate) 
+                        ? 'bg-red-100 text-red-600 font-medium' 
+                        : 'text-gray-900'
+                    }`}>
                       {item.item?.expiryDate || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

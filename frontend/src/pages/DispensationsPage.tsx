@@ -30,6 +30,23 @@ interface StagedMedication {
 export default function DispensationsPage() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+
+  // Function to convert MM-YYYY format to comparable date
+  const parseExpiryDate = (dateStr: string) => {
+    if (!dateStr) return new Date(0); // Return epoch for null/empty dates
+    const [month, year] = dateStr.split('-');
+    return new Date(parseInt(year), parseInt(month) - 1, 1); // Month is 0-indexed
+  };
+
+  // Function to check if a medication is expired
+  const isExpired = (dateStr: string) => {
+    if (!dateStr) return false;
+    const expiryDate = parseExpiryDate(dateStr);
+    const currentDate = new Date();
+    // Set current date to first day of current month for comparison
+    const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    return expiryDate < currentMonth;
+  };
   
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
   const [dispensationForm, setDispensationForm] = useState<DispensationForm>({
@@ -351,7 +368,11 @@ export default function DispensationsPage() {
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
                       {log.item?.form && translateForm(log.item.form)}
-                      {log.item?.expiryDate && ` | ${log.item.expiryDate}`}
+                      {log.item?.expiryDate && (
+                        <span className={isExpired(log.item.expiryDate) ? 'text-red-600 font-medium' : ''}>
+                          {` | ${log.item.expiryDate}`}
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs text-gray-400 mt-1">
                       {new Date(log.createdAt).toLocaleDateString()}
@@ -435,7 +456,10 @@ export default function DispensationsPage() {
                         {medication.name}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
-                        {translateForm(medication.form)} | {medication.expiryDate}
+                        {translateForm(medication.form)} | 
+                        <span className={isExpired(medication.expiryDate) ? 'text-red-600 font-medium' : ''}>
+                          {medication.expiryDate}
+                        </span>
                       </div>
                     </div>
                     <button
@@ -546,12 +570,18 @@ export default function DispensationsPage() {
                             }
                           }}
                           className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
-                            dispensationForm.expiryDate === date
+                            isExpired(date)
+                              ? dispensationForm.expiryDate === date
+                                ? 'bg-red-600 text-white'
+                                : 'bg-red-100 text-red-700 hover:bg-red-200'
+                              : dispensationForm.expiryDate === date
                               ? 'bg-blue-600 text-white'
                               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                           }`}
                         >
-                          {date}
+                          <span className={isExpired(date) ? 'line-through' : ''}>
+                            {date}
+                          </span>
                         </button>
                       ))
                     ) : (
