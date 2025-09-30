@@ -406,7 +406,6 @@ function ItemModal({ item, onSubmit, onClose, isLoading }: ItemModalProps) {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="TABLET">Tablet</option>
-                <option value="GEL_CAPSULE">Gel Capsule</option>
                 <option value="CAPSULE">Capsule</option>
                 <option value="GEL">Gel</option>
                 <option value="EYE_DROPS">Eye Drops</option>

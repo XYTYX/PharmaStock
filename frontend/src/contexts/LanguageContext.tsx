@@ -93,7 +93,6 @@ const translations = {
     'inventory.form.tablet': 'Tablet',
     'inventory.form.eyeDrops': 'Eye Drops',
     'inventory.form.cream': 'Cream',
-    'inventory.form.gelCapsule': 'Gel Capsule',
     'inventory.form.gel': 'Gel',
     'inventory.form.powder': 'Powder',
     
@@ -318,7 +317,6 @@ const translations = {
     'inventory.form.tablet': 'Comprimé',
     'inventory.form.eyeDrops': 'Collyre',
     'inventory.form.cream': 'Pommade',
-    'inventory.form.gelCapsule': 'Gélule Molle',
     'inventory.form.gel': 'Gel',
     'inventory.form.powder': 'Poudre',
     
