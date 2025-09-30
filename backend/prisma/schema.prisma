@@ -39,6 +39,8 @@ model Item {
   InventoryLog InventoryLog[]
   Inventory    Inventory[]
 
+  // Unique constraint to prevent duplicate items with same name, form, and expiry date
+  @@unique([name, form, expiryDate], name: "unique_item_combination")
   @@map("items")
 }
 

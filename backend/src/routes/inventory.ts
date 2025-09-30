@@ -1,6 +1,7 @@
 import express from 'express';
 import { z } from 'zod';
 import { prisma } from '../index';
+import { requireRole } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -12,6 +13,16 @@ const inventoryAdjustmentSchema = z.object({
   prescriptionNumber: z.string().optional(),
   notes: z.string().optional()
 });
+
+const itemSchema = z.object({
+  name: z.string().min(1, 'Item name is required'),
+  description: z.string().optional(),
+  form: z.enum(['TABLET', 'GEL_CAPSULE', 'CAPSULE', 'GEL', 'EYE_DROPS', 'POWDER']).optional(),
+  expiryDate: z.string().optional(),
+  initialStock: z.number().int().min(0).optional()
+});
+
+const updateItemSchema = itemSchema.partial();
 
 // Get inventory logs
 router.get('/logs', async (req, res) => {
@@ -255,6 +266,184 @@ router.get('/summary', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch inventory summary' });
+  }
+});
+
+// ==================== ADMIN ROUTES ====================
+
+// Create new item (Admin only)
+router.post('/items', requireRole(['ADMIN']), async (req, res) => {
+  try {
+    const { name, description, form, expiryDate, initialStock } = itemSchema.parse(req.body);
+    const userId = (req as any).user.id;
+
+    // Check if item with same name already exists
+    const existingItem = await prisma.item.findFirst({
+      where: { 
+        name: { equals: name },
+        isActive: true
+      }
+    });
+
+    if (existingItem) {
+      return res.status(400).json({ error: 'Item with this name already exists' });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Create the item
+      const item = await tx.item.create({
+        data: {
+          name,
+          description,
+          form: form || 'TABLET',
+          expiryDate
+        }
+      });
+
+      // Create initial inventory if stock provided
+      if (initialStock && initialStock > 0) {
+        await tx.inventory.create({
+          data: {
+            itemId: item.id,
+            currentStock: initialStock
+          }
+        });
+
+        // Create inventory log for initial stock
+        await tx.inventoryLog.create({
+          data: {
+            itemId: item.id,
+            userId,
+            reason: 'PURCHASE',
+            totalAmount: initialStock,
+            notes: `Initial stock: ${initialStock}`
+          }
+        });
+      }
+
+      return item;
+    });
+
+    res.status(201).json({ item: result });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation error', details: error.errors });
+    }
+    res.status(500).json({ error: 'Failed to create item' });
+  }
+});
+
+// Update item (Admin only)
+router.put('/items/:id', requireRole(['ADMIN']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = updateItemSchema.parse(req.body);
+
+    // Check if item exists
+    const existingItem = await prisma.item.findUnique({
+      where: { id }
+    });
+
+    if (!existingItem) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    // Check for name conflicts if name is being updated
+    if (data.name && data.name !== existingItem.name) {
+      const nameConflict = await prisma.item.findFirst({
+        where: { 
+          name: { equals: data.name },
+          isActive: true,
+          id: { not: id }
+        }
+      });
+
+      if (nameConflict) {
+        return res.status(400).json({ error: 'Item with this name already exists' });
+      }
+    }
+
+    const item = await prisma.item.update({
+      where: { id },
+      data,
+      include: {
+        Inventory: true
+      }
+    });
+
+    res.json({ item });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation error', details: error.errors });
+    }
+    res.status(500).json({ error: 'Failed to update item' });
+  }
+});
+
+// Update item stock directly (Admin only)
+router.put('/items/:id/stock', requireRole(['ADMIN']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { currentStock } = z.object({
+      currentStock: z.number().int().min(0)
+    }).parse(req.body);
+    const userId = (req as any).user.id;
+
+    // Check if item exists
+    const item = await prisma.item.findUnique({
+      where: { id }
+    });
+
+    if (!item) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Get current inventory
+      const inventory = await tx.inventory.findFirst({
+        where: { itemId: id }
+      });
+
+      const previousStock = inventory?.currentStock || 0;
+      const stockDifference = currentStock - previousStock;
+
+      // Update or create inventory
+      if (inventory) {
+        await tx.inventory.update({
+          where: { id: inventory.id },
+          data: { currentStock }
+        });
+      } else {
+        await tx.inventory.create({
+          data: {
+            itemId: id,
+            currentStock
+          }
+        });
+      }
+
+      // Create inventory log if there's a change
+      if (stockDifference !== 0) {
+        await tx.inventoryLog.create({
+          data: {
+            itemId: id,
+            userId,
+            reason: 'ADJUSTMENT',
+            totalAmount: stockDifference,
+            notes: `Admin stock adjustment: ${stockDifference > 0 ? '+' : ''}${stockDifference} (${previousStock} → ${currentStock})`
+          }
+        });
+      }
+
+      return { currentStock };
+    });
+
+    res.json({ stock: result });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation error', details: error.errors });
+    }
+    res.status(500).json({ error: 'Failed to update stock' });
   }
 });
 

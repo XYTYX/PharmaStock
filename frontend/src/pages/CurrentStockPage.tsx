@@ -1,25 +1,88 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuthStore } from '../store/authStore';
 
 export default function CurrentStockPage() {
   const { t } = useLanguage();
+  const { user } = useAuthStore();
+  const queryClient = useQueryClient();
   const [filter, setFilter] = useState({
     search: '',
     sortBy: 'item.name',
     sortOrder: 'asc'
   });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
+
+  // Check if current user is admin
+  const isAdmin = user?.role === 'ADMIN';
 
   // Function to translate form values
   const translateForm = (form: string) => {
     const formMap: { [key: string]: string } = {
       'CAPSULE': t('inventory.form.capsule'),
       'TABLET': t('inventory.form.tablet'),
+      'GEL': t('inventory.form.gel'),
       'EYE_DROPS': t('inventory.form.eyeDrops'),
+      'POWDER': t('inventory.form.powder'),
       'CREAM': t('inventory.form.cream')
     };
     return formMap[form] || form;
+  };
+
+  // Mutations for admin functionality
+  const createItemMutation = useMutation({
+    mutationFn: inventoryApi.createItem,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['current-stock-all'] });
+      setIsModalOpen(false);
+      setEditingItem(null);
+    }
+  });
+
+  const updateItemMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => inventoryApi.updateItem(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['current-stock-all'] });
+      setIsModalOpen(false);
+      setEditingItem(null);
+    }
+  });
+
+  const updateStockMutation = useMutation({
+    mutationFn: ({ id, currentStock }: { id: string; currentStock: number }) => 
+      inventoryApi.updateItemStock(id, currentStock),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['current-stock-all'] });
+    }
+  });
+
+  // Admin functions
+  const handleEdit = (item: any) => {
+    setEditingItem(item);
+    setIsModalOpen(true);
+  };
+
+  const handleCreate = () => {
+    setEditingItem(null);
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = (formData: any) => {
+    if (editingItem) {
+      // Update item details
+      const { currentStock, ...itemData } = formData;
+      updateItemMutation.mutate({ id: editingItem.item.id, data: itemData });
+      
+      // Update stock if it changed
+      if (currentStock !== editingItem.currentStock) {
+        updateStockMutation.mutate({ id: editingItem.item.id, currentStock });
+      }
+    } else {
+      createItemMutation.mutate(formData);
+    }
   };
 
   // Fetch all inventory data once
@@ -91,11 +154,21 @@ export default function CurrentStockPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t('nav.currentStock')}</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          {t('inventory.currentStock')} - {t('inventory.subtitle')}
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">{t('nav.currentStock')}</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            {t('inventory.currentStock')} - {t('inventory.subtitle')}
+          </p>
+        </div>
+        {isAdmin && (
+          <button
+            onClick={handleCreate}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Add New Item
+          </button>
+        )}
       </div>
 
       {/* Summary Cards */}
@@ -188,6 +261,11 @@ export default function CurrentStockPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {t('inventory.stockLevel')}
                 </th>
+                {isAdmin && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -221,6 +299,16 @@ export default function CurrentStockPage() {
                         {stockLevel.text}
                       </span>
                     </td>
+                    {isAdmin && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -233,6 +321,146 @@ export default function CurrentStockPage() {
             {t('inventory.noStock')}
           </div>
         )}
+      </div>
+
+      {/* Item Modal */}
+      {isModalOpen && (
+        <ItemModal
+          item={editingItem}
+          onSubmit={handleSubmit}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingItem(null);
+          }}
+          isLoading={createItemMutation.isPending || updateItemMutation.isPending}
+        />
+      )}
+    </div>
+  );
+}
+
+// Item Modal Component
+interface ItemModalProps {
+  item: any;
+  onSubmit: (data: any) => void;
+  onClose: () => void;
+  isLoading: boolean;
+}
+
+function ItemModal({ item, onSubmit, onClose, isLoading }: ItemModalProps) {
+  const [formData, setFormData] = useState({
+    name: item?.item?.name || '',
+    description: item?.item?.description || '',
+    form: item?.item?.form || 'TABLET',
+    expiryDate: item?.item?.expiryDate || '',
+    currentStock: item?.currentStock || 0,
+    initialStock: item?.currentStock || 0
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div className="mt-3">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            {item ? 'Edit Item' : 'Add New Item'}
+          </h3>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Name *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Form
+              </label>
+              <select
+                value={formData.form}
+                onChange={(e) => setFormData({ ...formData, form: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="TABLET">Tablet</option>
+                <option value="GEL_CAPSULE">Gel Capsule</option>
+                <option value="CAPSULE">Capsule</option>
+                <option value="GEL">Gel</option>
+                <option value="EYE_DROPS">Eye Drops</option>
+                <option value="POWDER">Powder</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Expiry Date (MM-YYYY)
+              </label>
+              <input
+                type="text"
+                placeholder="MM-YYYY"
+                value={formData.expiryDate}
+                onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {item ? 'Current Stock' : 'Initial Stock'}
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={item ? formData.currentStock : formData.initialStock}
+                onChange={(e) => setFormData({ 
+                  ...formData, 
+                  [item ? 'currentStock' : 'initialStock']: parseInt(e.target.value) || 0 
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                {isLoading ? 'Saving...' : (item ? 'Update' : 'Create')}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

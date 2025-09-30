@@ -105,6 +105,22 @@ export const inventoryApi = {
     const response = await api.get('/inventory/summary');
     return response.data;
   },
+
+  // Admin item management
+  createItem: async (data: any) => {
+    const response = await api.post('/inventory/items', data);
+    return response.data;
+  },
+
+  updateItem: async (id: string, data: any) => {
+    const response = await api.put(`/inventory/items/${id}`, data);
+    return response.data;
+  },
+
+  updateItemStock: async (id: string, currentStock: number) => {
+    const response = await api.put(`/inventory/items/${id}/stock`, { currentStock });
+    return response.data;
+  },
 };
 
 // Users API

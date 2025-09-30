@@ -210,7 +210,6 @@ export default function DispensationsPage() {
       'CAPSULE': t('inventory.form.capsule'),
       'TABLET': t('inventory.form.tablet'),
       'EYE_DROPS': t('inventory.form.eyeDrops'),
-      'GEL_CAPSULE': t('inventory.form.gelCapsule'),
       'GEL': t('inventory.form.gel'),
       'POWDER': t('inventory.form.powder')
     };
