@@ -358,6 +358,7 @@ start_backend() {
         # Production: use systemd
         log "Starting backend with systemd..."
         systemctl start pharmastock-backend
+        
         systemctl enable pharmastock-backend
         log "Backend started with systemd"
     fi

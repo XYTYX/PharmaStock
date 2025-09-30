@@ -241,6 +241,40 @@ export default function DispensationsPage() {
     setStagedMedications(prev => prev.filter(med => med.id !== id));
   };
 
+  // Add medication from recent dispensations directly to staging area
+  const addRecentMedicationToStaging = (log: any) => {
+    if (!log.item || !log.item.id || !log.item.name) {
+      alert('Cannot add this medication to staging - missing required information');
+      return;
+    }
+
+    const itemId = log.item.id;
+    const existing = stagedMedications.find(m => m.itemId === itemId);
+    
+    if (existing) {
+      // If medication already exists in staging, increment quantity
+      setStagedMedications(prev => 
+        prev.map(m =>
+          m.itemId === itemId
+            ? { ...m, quantity: m.quantity + 1 }
+            : m
+        )
+      );
+    } else {
+      // Add new medication to staging
+      const stagedMedication: StagedMedication = {
+        id: itemId,
+        itemId: itemId,
+        name: log.item.name,
+        form: log.item.form || '',
+        expiryDate: log.item.expiryDate || '',
+        quantity: 1
+      };
+
+      setStagedMedications(prev => [...prev, stagedMedication]);
+    }
+  };
+
   const confirmDispensation = async () => {
     if (stagedMedications.length === 0) {
       alert(t('dispensations.noStagedMedications'));
@@ -306,7 +340,12 @@ export default function DispensationsPage() {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {recentDispensations.logs.slice(0, 6).map((log: any) => (
-                  <div key={log.id} className="border rounded-lg p-3 bg-gray-50">
+                  <div 
+                    key={log.id} 
+                    onClick={() => addRecentMedicationToStaging(log)}
+                    className="border rounded-lg p-3 bg-gray-50 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-all duration-200 hover:shadow-md"
+                    title="Click to add to staging area"
+                  >
                     <div className="text-sm font-medium text-gray-900">
                       {log.item?.name}
                     </div>
@@ -316,6 +355,10 @@ export default function DispensationsPage() {
                     </div>
                     <div className="text-xs text-gray-400 mt-1">
                       {new Date(log.createdAt).toLocaleDateString()}
+                    </div>
+                    <div className="text-xs text-blue-600 mt-2 font-medium flex items-center">
+                      <span className="mr-1">+</span>
+                      Click to dispense
                     </div>
                   </div>
                 ))}

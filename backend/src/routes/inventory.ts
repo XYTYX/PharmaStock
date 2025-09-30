@@ -201,6 +201,8 @@ router.get('/stock', async (req, res) => {
       orderBy.currentStock = sortOrder;
     } else if (sortBy === 'item.form') {
       orderBy.item = { form: sortOrder };
+    } else if (sortBy === 'item.expiryDate') {
+      orderBy.item = { expiryDate: sortOrder };
     } else {
       orderBy[sortBy as string] = sortOrder;
     }

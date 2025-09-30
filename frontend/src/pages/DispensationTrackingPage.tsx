@@ -3,15 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { inventoryApi } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 
-const logTypeLabels = {
-  PURCHASE: 'Achat',
-  DISPENSATION: 'Dispensation',
-  ADJUSTMENT: 'Ajustement',
-  TRANSFER: 'Transfert',
-  EXPIRED: 'Expiré',
-  DAMAGED: 'Endommagé',
-  RETURN: 'Retour'
-};
 
 export default function DispensationTrackingPage() {
   const { t } = useLanguage();
@@ -45,9 +36,22 @@ export default function DispensationTrackingPage() {
       RETURN: 'bg-gray-100 text-gray-800'
     };
 
+    const getTypeLabel = (reason: string) => {
+      switch (reason) {
+        case 'PURCHASE': return t('dispensation.purchase');
+        case 'DISPENSATION': return t('dispensation.dispensation');
+        case 'ADJUSTMENT': return t('dispensation.adjustment');
+        case 'TRANSFER': return t('dispensation.transfer');
+        case 'EXPIRED': return t('dispensation.expired');
+        case 'DAMAGED': return t('dispensation.damaged');
+        case 'RETURN': return t('dispensation.return');
+        default: return reason;
+      }
+    };
+
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[reason as keyof typeof colors] || 'bg-gray-100 text-gray-800'}`}>
-        {logTypeLabels[reason as keyof typeof logTypeLabels] || reason}
+        {getTypeLabel(reason)}
       </span>
     );
   };

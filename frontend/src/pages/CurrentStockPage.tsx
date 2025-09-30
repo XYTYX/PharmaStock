@@ -32,6 +32,13 @@ export default function CurrentStockPage() {
     return formMap[form] || form;
   };
 
+  // Function to convert MM-YYYY format to comparable date
+  const parseExpiryDate = (dateStr: string) => {
+    if (!dateStr) return new Date(0); // Return epoch for null/empty dates
+    const [month, year] = dateStr.split('-');
+    return new Date(parseInt(year), parseInt(month) - 1, 1); // Month is 0-indexed
+  };
+
   // Mutations for admin functionality
   const createItemMutation = useMutation({
     mutationFn: inventoryApi.createItem,
@@ -127,15 +134,28 @@ export default function CurrentStockPage() {
       } else if (filter.sortBy === 'item.form') {
         aValue = a.item?.form ? translateForm(a.item.form) : '';
         bValue = b.item?.form ? translateForm(b.item.form) : '';
+      } else if (filter.sortBy === 'item.expiryDate') {
+        aValue = parseExpiryDate(a.item?.expiryDate || '');
+        bValue = parseExpiryDate(b.item?.expiryDate || '');
       } else {
         aValue = a.item?.name || '';
         bValue = b.item?.name || '';
       }
 
-      if (filter.sortOrder === 'asc') {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      if (filter.sortBy === 'item.expiryDate') {
+        // For dates, we need to compare Date objects
+        if (filter.sortOrder === 'asc') {
+          return aValue.getTime() - bValue.getTime();
+        } else {
+          return bValue.getTime() - aValue.getTime();
+        }
       } else {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        // For other values, use string/number comparison
+        if (filter.sortOrder === 'asc') {
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        } else {
+          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        }
       }
     });
 
@@ -231,6 +251,7 @@ export default function CurrentStockPage() {
               <option value="item.name">{t('inventory.item')}</option>
               <option value="currentStock">{t('inventory.currentStock')}</option>
               <option value="item.form">{t('inventory.form')}</option>
+              <option value="item.expiryDate">{t('inventory.expiryDate')}</option>
             </select>
           </div>
           
