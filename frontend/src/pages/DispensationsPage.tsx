@@ -121,7 +121,7 @@ export default function DispensationsPage() {
     return item?.item?.id || null;
   };
 
-  // Get filtered expiry dates based on selected form
+  // Get filtered expiry dates based on selected form (excluding expired dates)
   const getFilteredExpiryDates = (medicationName: string, form: string) => {
     if (!stockData?.inventory || !form) return [];
     
@@ -131,7 +131,8 @@ export default function DispensationsPage() {
       if (inv.item?.name === medicationName && 
           inv.item?.form === form && 
           inv.item?.expiryDate && 
-          inv.currentStock > 0) {
+          inv.currentStock > 0 &&
+          !isExpired(inv.item.expiryDate)) { // Filter out expired dates
         expiryDates.add(inv.item.expiryDate);
       }
     });
@@ -182,7 +183,7 @@ export default function DispensationsPage() {
     setSelectedMedication(medication);
     const firstForm = medication.forms[0] || '';
     
-    // Get filtered expiry dates for the first form
+    // Get filtered expiry dates for the first form (non-expired only)
     const filteredExpiryDates = getFilteredExpiryDates(medication.name, firstForm);
     const firstExpiryDate = filteredExpiryDates[0] || '';
     
@@ -518,7 +519,7 @@ export default function DispensationsPage() {
                         key={form}
                         type="button"
                         onClick={() => {
-                          // Get filtered expiry dates for the new form
+                          // Get filtered expiry dates for the new form (non-expired only)
                           const filteredExpiryDates = getFilteredExpiryDates(selectedMedication.name, form);
                           const firstExpiryDate = filteredExpiryDates[0] || '';
                           
@@ -554,8 +555,23 @@ export default function DispensationsPage() {
                     {t('dispensations.expiryDate')}
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {getFilteredExpiryDates(selectedMedication.name, dispensationForm.form).length > 0 ? (
-                      getFilteredExpiryDates(selectedMedication.name, dispensationForm.form).map(date => (
+                    {(() => {
+                      // Get all expiry dates (including expired) for display
+                      const allExpiryDates = new Set<string>();
+                      if (stockData?.inventory) {
+                        stockData.inventory.forEach((inv: any) => {
+                          if (inv.item?.name === selectedMedication.name && 
+                              inv.item?.form === dispensationForm.form && 
+                              inv.item?.expiryDate && 
+                              inv.currentStock > 0) {
+                            allExpiryDates.add(inv.item.expiryDate);
+                          }
+                        });
+                      }
+                      const sortedDates = Array.from(allExpiryDates).sort();
+                      
+                      return sortedDates.length > 0 ? (
+                        sortedDates.map(date => (
                         <button
                           key={date}
                           type="button"
@@ -588,7 +604,8 @@ export default function DispensationsPage() {
                       <div className="text-sm text-gray-500 italic">
                         {t('dispensations.noExpiryDatesForForm')}
                       </div>
-                    )}
+                    );
+                    })(t )}
                   </div>
                 </div>
 
