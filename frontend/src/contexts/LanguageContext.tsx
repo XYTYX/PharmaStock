@@ -170,6 +170,7 @@ const translations = {
     'dispensations.confirmDispensation': 'Confirm Dispensation',
     'dispensations.noStagedMedications': 'No medications staged for dispensation',
     'dispensations.noExpiryDatesForForm': 'No expiry dates available for this form',
+    'dispensations.clickToDispense': 'Click to dispense',
     
     // Common
     'common.optional': 'Optional',
@@ -412,6 +413,7 @@ const translations = {
     'dispensations.confirmDispensation': 'Confirmer la Dispensation',
     'dispensations.noStagedMedications': 'Aucun médicament mis en scène pour la dispensation',
     'dispensations.noExpiryDatesForForm': 'Aucune date d\'expiration disponible pour cette forme',
+    'dispensations.clickToDispense': 'Cliquer pour dispenser',
     
     // Common
     'common.optional': 'Optionnel',

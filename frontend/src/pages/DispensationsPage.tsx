@@ -344,7 +344,7 @@ export default function DispensationsPage() {
                     key={log.id} 
                     onClick={() => addRecentMedicationToStaging(log)}
                     className="border rounded-lg p-3 bg-gray-50 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-all duration-200 hover:shadow-md"
-                    title="Click to add to staging area"
+                    title={t('dispensations.clickToDispense')}
                   >
                     <div className="text-sm font-medium text-gray-900">
                       {log.item?.name}
@@ -358,7 +358,7 @@ export default function DispensationsPage() {
                     </div>
                     <div className="text-xs text-blue-600 mt-2 font-medium flex items-center">
                       <span className="mr-1">+</span>
-                      Click to dispense
+                      {t('dispensations.clickToDispense')}
                     </div>
                   </div>
                 ))}
