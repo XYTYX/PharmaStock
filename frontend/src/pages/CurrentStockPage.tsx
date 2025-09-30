@@ -166,7 +166,7 @@ export default function CurrentStockPage() {
             onClick={handleCreate}
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            Add New Item
+            {t('inventory.modal.addNewItem')}
           </button>
         )}
       </div>
@@ -263,7 +263,7 @@ export default function CurrentStockPage() {
                 </th>
                 {isAdmin && (
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    {t('inventory.modal.actions')}
                   </th>
                 )}
               </tr>
@@ -305,7 +305,7 @@ export default function CurrentStockPage() {
                           onClick={() => handleEdit(item)}
                           className="text-blue-600 hover:text-blue-900"
                         >
-                          Edit
+                          {t('inventory.modal.editItem')}
                         </button>
                       </td>
                     )}
@@ -348,6 +348,7 @@ interface ItemModalProps {
 }
 
 function ItemModal({ item, onSubmit, onClose, isLoading }: ItemModalProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: item?.item?.name || '',
     description: item?.item?.description || '',
@@ -367,13 +368,13 @@ function ItemModal({ item, onSubmit, onClose, isLoading }: ItemModalProps) {
       <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <div className="mt-3">
           <h3 className="text-lg font-medium text-gray-900 mb-4">
-            {item ? 'Edit Item' : 'Add New Item'}
+            {item ? t('inventory.modal.editItem') : t('inventory.modal.addNewItem')}
           </h3>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Name *
+                {t('inventory.modal.nameRequired')}
               </label>
               <input
                 type="text"
@@ -386,7 +387,7 @@ function ItemModal({ item, onSubmit, onClose, isLoading }: ItemModalProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
+                {t('inventory.modal.description')}
               </label>
               <textarea
                 value={formData.description}
@@ -398,28 +399,28 @@ function ItemModal({ item, onSubmit, onClose, isLoading }: ItemModalProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Form
+                {t('inventory.modal.form')}
               </label>
               <select
                 value={formData.form}
                 onChange={(e) => setFormData({ ...formData, form: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="TABLET">Tablet</option>
-                <option value="CAPSULE">Capsule</option>
-                <option value="GEL">Gel</option>
-                <option value="EYE_DROPS">Eye Drops</option>
-                <option value="POWDER">Powder</option>
+                <option value="TABLET">{t('inventory.form.tablet')}</option>
+                <option value="CAPSULE">{t('inventory.form.capsule')}</option>
+                <option value="GEL">{t('inventory.form.gel')}</option>
+                <option value="EYE_DROPS">{t('inventory.form.eyeDrops')}</option>
+                <option value="POWDER">{t('inventory.form.powder')}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Expiry Date (MM-YYYY)
+                {t('inventory.modal.expiryDate')}
               </label>
               <input
                 type="text"
-                placeholder="MM-YYYY"
+                placeholder={t('inventory.modal.expiryDatePlaceholder')}
                 value={formData.expiryDate}
                 onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -428,7 +429,7 @@ function ItemModal({ item, onSubmit, onClose, isLoading }: ItemModalProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {item ? 'Current Stock' : 'Initial Stock'}
+                {item ? t('inventory.modal.currentStock') : t('inventory.modal.initialStock')}
               </label>
               <input
                 type="number"
@@ -448,14 +449,14 @@ function ItemModal({ item, onSubmit, onClose, isLoading }: ItemModalProps) {
                 onClick={onClose}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
               >
-                Cancel
+                {t('inventory.modal.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={isLoading}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
               >
-                {isLoading ? 'Saving...' : (item ? 'Update' : 'Create')}
+                {isLoading ? t('inventory.modal.saving') : (item ? t('inventory.modal.update') : t('inventory.modal.create'))}
               </button>
             </div>
           </form>

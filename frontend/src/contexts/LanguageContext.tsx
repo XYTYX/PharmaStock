@@ -96,6 +96,23 @@ const translations = {
     'inventory.form.gel': 'Gel',
     'inventory.form.powder': 'Powder',
     
+    // Item Modal
+    'inventory.modal.addNewItem': 'Add New Item',
+    'inventory.modal.editItem': 'Edit Item',
+    'inventory.modal.name': 'Name',
+    'inventory.modal.nameRequired': 'Name *',
+    'inventory.modal.description': 'Description',
+    'inventory.modal.form': 'Form',
+    'inventory.modal.expiryDate': 'Expiry Date (MM-YYYY)',
+    'inventory.modal.expiryDatePlaceholder': 'MM-YYYY',
+    'inventory.modal.currentStock': 'Current Stock',
+    'inventory.modal.initialStock': 'Initial Stock',
+    'inventory.modal.actions': 'Actions',
+    'inventory.modal.cancel': 'Cancel',
+    'inventory.modal.create': 'Create',
+    'inventory.modal.update': 'Update',
+    'inventory.modal.saving': 'Saving...',
+    
     // Dispensation
     'dispensation.subtitle': 'History of inventory movements and dispensations',
     'dispensation.loading': 'Loading...',
@@ -320,6 +337,23 @@ const translations = {
     'inventory.form.cream': 'Pommade',
     'inventory.form.gel': 'Gel',
     'inventory.form.powder': 'Poudre',
+    
+    // Item Modal
+    'inventory.modal.addNewItem': 'Ajouter un Nouvel Article',
+    'inventory.modal.editItem': 'Modifier l\'Article',
+    'inventory.modal.name': 'Nom',
+    'inventory.modal.nameRequired': 'Nom *',
+    'inventory.modal.description': 'Description',
+    'inventory.modal.form': 'Forme',
+    'inventory.modal.expiryDate': 'Date d\'Expiration (MM-YYYY)',
+    'inventory.modal.expiryDatePlaceholder': 'MM-YYYY',
+    'inventory.modal.currentStock': 'Stock Actuel',
+    'inventory.modal.initialStock': 'Stock Initial',
+    'inventory.modal.actions': 'Actions',
+    'inventory.modal.cancel': 'Annuler',
+    'inventory.modal.create': 'Créer',
+    'inventory.modal.update': 'Mettre à jour',
+    'inventory.modal.saving': 'Enregistrement...',
     
     // Dispensation
     'dispensation.subtitle': 'Historique des mouvements d\'inventaire et dispensations',
