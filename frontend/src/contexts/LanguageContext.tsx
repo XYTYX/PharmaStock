@@ -34,6 +34,7 @@ const translations = {
     'common.language': 'Language',
     'common.english': 'English',
     'common.french': 'Français',
+    'common.units': 'units',
     
     // App title
     'app.title': 'Hospital Pharmacy Management',
@@ -299,6 +300,7 @@ const translations = {
     'common.language': 'Langue',
     'common.english': 'English',
     'common.french': 'Français',
+    'common.units': 'unités',
     
     // App title
     'app.title': 'Gestion de Pharmacie Hospitalière',

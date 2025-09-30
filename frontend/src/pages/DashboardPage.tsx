@@ -162,7 +162,7 @@ export default function DashboardPage() {
                           {log.item?.name || 'Article supprimé'}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {log.reason} - {log.totalAmount} unités
+                          {log.reason} - {log.totalAmount} {t('common.units')}
                         </div>
                       </div>
                     </div>

@@ -25,6 +25,7 @@ interface StagedMedication {
   form: string;
   expiryDate: string;
   quantity: number;
+  addedAt: number; // Timestamp when medication was added to staging
 }
 
 export default function DispensationsPage() {
@@ -71,11 +72,33 @@ export default function DispensationsPage() {
     queryKey: ['recent-dispensations'],
     queryFn: () => inventoryApi.getInventoryLogs({ 
       reason: 'DISPENSATION',
-      limit: 20,
+      limit: 20, // Get more records to ensure we have enough unique items
       sortBy: 'createdAt',
       sortOrder: 'desc'
     })
   });
+
+  // Process recent dispensations to get unique items (most recent per item)
+  const uniqueRecentMedications = useMemo(() => {
+    if (!recentDispensations?.logs) return [];
+    
+    // Group by itemId and get the most recent entry for each unique item
+    const itemMap = new Map();
+    
+    recentDispensations.logs.forEach((log: any) => {
+      if (log.item && log.item.id) {
+        const itemId = log.item.id;
+        if (!itemMap.has(itemId) || new Date(log.createdAt) > new Date(itemMap.get(itemId).createdAt)) {
+          itemMap.set(itemId, log);
+        }
+      }
+    });
+    
+    // Convert to array and sort by creation date, then take top 6
+    return Array.from(itemMap.values())
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 6);
+  }, [recentDispensations]);
 
   // Process medications data to group by name and collect forms/expiry dates
   const medications = useMemo(() => {
@@ -215,7 +238,7 @@ export default function DispensationsPage() {
       if (existing) {
         return prev.map(m =>
           m.itemId === correctItemId
-            ? { ...m, quantity: m.quantity + dispensationForm.quantity }
+            ? { ...m, quantity: m.quantity + dispensationForm.quantity, addedAt: Date.now() }
             : m
         );
       }
@@ -226,7 +249,8 @@ export default function DispensationsPage() {
         name: selectedMedication?.name || '',
         form: dispensationForm.form,
         expiryDate: dispensationForm.expiryDate,
-        quantity: dispensationForm.quantity
+        quantity: dispensationForm.quantity,
+        addedAt: Date.now()
       };
 
       return [...prev, stagedMedication];
@@ -286,7 +310,8 @@ export default function DispensationsPage() {
         name: log.item.name,
         form: log.item.form || '',
         expiryDate: log.item.expiryDate || '',
-        quantity: 1
+        quantity: 1,
+        addedAt: Date.now()
       };
 
       setStagedMedications(prev => [...prev, stagedMedication]);
@@ -351,13 +376,13 @@ export default function DispensationsPage() {
           </div>
 
           {/* Recent Prescribed Medications */}
-          {recentDispensations?.logs && recentDispensations.logs.length > 0 && (
+          {uniqueRecentMedications && uniqueRecentMedications.length > 0 && (
             <div className="bg-white p-4 rounded-lg shadow">
               <h2 className="text-lg font-medium text-gray-900 mb-4">
                 {t('dispensations.recentPrescriptions')}
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {recentDispensations.logs.slice(0, 6).map((log: any) => (
+                {uniqueRecentMedications.map((log: any) => (
                   <div 
                     key={log.id} 
                     onClick={() => addRecentMedicationToStaging(log)}
@@ -605,7 +630,7 @@ export default function DispensationsPage() {
                         {t('dispensations.noExpiryDatesForForm')}
                       </div>
                     );
-                    })(t )}
+                    })()}
                   </div>
                 </div>
 
