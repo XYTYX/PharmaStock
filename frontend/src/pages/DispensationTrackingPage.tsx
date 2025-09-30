@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { inventoryApi } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -6,6 +6,19 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 export default function DispensationTrackingPage() {
   const { t } = useLanguage();
+  
+  // Calculate date range for last two months inclusive of today
+  const getLastTwoMonthsDateRange = () => {
+    const today = new Date();
+    const twoMonthsAgo = new Date();
+    twoMonthsAgo.setMonth(today.getMonth() - 2);
+    
+    return {
+      dateFrom: twoMonthsAgo.toISOString().split('T')[0],
+      dateTo: today.toISOString().split('T')[0]
+    };
+  };
+
   const [filter, setFilter] = useState({
     search: '',
     reason: '',
@@ -13,14 +26,29 @@ export default function DispensationTrackingPage() {
     dateTo: ''
   });
 
-  const { data: inventoryLogs, isLoading, error, refetch } = useQuery({
+  // Set initial date range on component mount
+  useEffect(() => {
+    const dateRange = getLastTwoMonthsDateRange();
+    setFilter(prev => ({
+      ...prev,
+      dateFrom: dateRange.dateFrom,
+      dateTo: dateRange.dateTo
+    }));
+  }, []);
+
+  const { data: inventoryLogs, isLoading, error } = useQuery({
     queryKey: ['inventory-logs', filter],
-    queryFn: () => inventoryApi.getInventoryLogs({
-      search: filter.search,
-      reason: filter.reason || undefined,
-      startDate: filter.dateFrom || undefined,
-      endDate: filter.dateTo || undefined
-    }),
+    queryFn: () => {
+      // Add end-of-day time to endDate to include the full day
+      const endDate = filter.dateTo ? new Date(filter.dateTo + 'T23:59:59.999Z').toISOString() : undefined;
+      
+      return inventoryApi.getInventoryLogs({
+        search: filter.search,
+        reason: filter.reason || undefined,
+        startDate: filter.dateFrom || undefined,
+        endDate: endDate
+      });
+    },
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     staleTime: 0
