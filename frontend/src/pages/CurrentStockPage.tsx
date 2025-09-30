@@ -76,17 +76,6 @@ export default function CurrentStockPage() {
     }
   });
 
-  const updateStockMutation = useMutation({
-    mutationFn: ({ id, currentStock }: { id: string; currentStock: number }) => 
-      inventoryApi.updateItemStock(id, currentStock),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['current-stock-all'] });
-    },
-    onError: (error) => {
-      console.error('Error updating stock:', error);
-      alert('Failed to update stock. Please try again.');
-    }
-  });
 
   // Admin functions
   const handleEdit = (item: any) => {
@@ -104,11 +93,6 @@ export default function CurrentStockPage() {
       // Update item details (exclude stock-related fields)
       const { currentStock, initialStock, ...itemData } = formData;
       updateItemMutation.mutate({ id: editingItem.item.id, data: itemData });
-      
-      // Update stock if it changed
-      if (currentStock !== editingItem.currentStock) {
-        updateStockMutation.mutate({ id: editingItem.item.id, currentStock });
-      }
     } else {
       // Ensure initialStock is a valid number for new items
       const submitData = {
@@ -407,7 +391,6 @@ function ItemModal({ item, onSubmit, onClose, isLoading }: ItemModalProps) {
     description: item?.item?.description || '',
     form: item?.item?.form || 'TABLET',
     expiryDate: item?.item?.expiryDate || '',
-    currentStock: item?.currentStock || 0,
     initialStock: item?.currentStock || 0
   });
 
@@ -479,24 +462,10 @@ function ItemModal({ item, onSubmit, onClose, isLoading }: ItemModalProps) {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {item ? t('inventory.modal.currentStock') : t('inventory.modal.initialStock')}
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={item ? formData.currentStock : formData.initialStock}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value) || 0;
-                  setFormData({ 
-                    ...formData, 
-                    [item ? 'currentStock' : 'initialStock']: value 
-                  });
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+            <div className="mb-2">
+              <span className="text-xs text-gray-500">
+                {t('inventory.modal.adjustHint')}
+              </span>
             </div>
 
             <div className="flex justify-end space-x-3 pt-4">

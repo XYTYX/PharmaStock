@@ -8,7 +8,8 @@ import {
   LanguageIcon,
   CubeIcon,
   BeakerIcon,
-  ClipboardDocumentListIcon
+  ClipboardDocumentListIcon,
+  CalculatorIcon
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../store/authStore';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -28,6 +29,7 @@ const baseNavigation = [
 // Admin-only navigation items
 const adminNavigation = [
   { nameKey: 'nav.users', href: '/users', icon: UserGroupIcon },
+  { nameKey: 'nav.reconciliation', href: '/reconciliation', icon: CalculatorIcon },
 ];
 
 export default function Layout({ children }: LayoutProps) {

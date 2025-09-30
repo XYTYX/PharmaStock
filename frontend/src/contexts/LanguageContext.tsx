@@ -26,6 +26,7 @@ const translations = {
     'nav.inventory': 'Inventory',
     'nav.reports': 'Reports',
     'nav.users': 'Users',
+    'nav.reconciliation': 'Reconciliation',
     
     // Common
     'common.welcome': 'Welcome',
@@ -112,6 +113,7 @@ const translations = {
     'inventory.modal.create': 'Create',
     'inventory.modal.update': 'Update',
     'inventory.modal.saving': 'Saving...',
+    'inventory.modal.adjustHint': 'To adjust stock quantities, please use the reconciliation feature.',
     
     // Dispensation
     'dispensation.subtitle': 'History of inventory movements and dispensations',
@@ -254,6 +256,24 @@ const translations = {
     'login.adminCredentials': 'Admin: admin / admin123',
     'login.pharmacistCredentials': 'Pharmacist: pharmacist / pharmacist123',
     'login.technicianCredentials': 'Technician: tech / tech123',
+    
+    // Reconciliation
+    'reconciliation.title': 'Inventory Reconciliation',
+    'reconciliation.subtitle': 'Reconcile actual medication quantities with system records',
+    'reconciliation.totalItems': 'Total Items',
+    'reconciliation.totalCurrentStock': 'Total Current Stock',
+    'reconciliation.totalActualStock': 'Total Actual Stock',
+    'reconciliation.currentQuantity': 'Current Quantity',
+    'reconciliation.actualQuantity': 'Actual Quantity',
+    'reconciliation.adjustment': 'Adjustment',
+    'reconciliation.submit': 'Submit Reconciliation',
+    'reconciliation.submitting': 'Submitting...',
+    'reconciliation.submittedSuccessfully': 'Reconciliation submitted successfully',
+    'reconciliation.submitError': 'Error submitting reconciliation',
+    'reconciliation.accessDenied': 'Access Denied',
+    'reconciliation.adminOnly': 'This page is only available to administrators',
+    'reconciliation.noItems': 'No items found for reconciliation',
+    'reconciliation.noAdjustments': 'No adjustments to submit',
   },
   fr: {
     // Navigation
@@ -269,6 +289,7 @@ const translations = {
     'nav.inventory': 'Inventaire',
     'nav.reports': 'Rapports',
     'nav.users': 'Utilisateurs',
+    'nav.reconciliation': 'Réconciliation',
     
     // Common
     'common.welcome': 'Bienvenue',
@@ -355,6 +376,7 @@ const translations = {
     'inventory.modal.create': 'Créer',
     'inventory.modal.update': 'Mettre à jour',
     'inventory.modal.saving': 'Enregistrement...',
+    'inventory.modal.adjustHint': 'Pour ajuster les quantités de stock, veuillez utiliser la fonction de réconciliation.',
     
     // Dispensation
     'dispensation.subtitle': 'Historique des mouvements d\'inventaire et dispensations',
@@ -497,6 +519,24 @@ const translations = {
     'login.adminCredentials': 'Admin: admin / admin123',
     'login.pharmacistCredentials': 'Pharmacien: pharmacist / pharmacist123',
     'login.technicianCredentials': 'Technicien: tech / tech123',
+    
+    // Reconciliation
+    'reconciliation.title': 'Réconciliation d\'Inventaire',
+    'reconciliation.subtitle': 'Réconcilier les quantités réelles de médicaments avec les enregistrements du système',
+    'reconciliation.totalItems': 'Articles Totaux',
+    'reconciliation.totalCurrentStock': 'Stock Actuel Total',
+    'reconciliation.totalActualStock': 'Stock Réel Total',
+    'reconciliation.currentQuantity': 'Quantité Actuelle',
+    'reconciliation.actualQuantity': 'Quantité Réelle',
+    'reconciliation.adjustment': 'Ajustement',
+    'reconciliation.submit': 'Soumettre la Réconciliation',
+    'reconciliation.submitting': 'Soumission...',
+    'reconciliation.submittedSuccessfully': 'Réconciliation soumise avec succès',
+    'reconciliation.submitError': 'Erreur lors de la soumission de la réconciliation',
+    'reconciliation.accessDenied': 'Accès Refusé',
+    'reconciliation.adminOnly': 'Cette page n\'est disponible qu\'aux administrateurs',
+    'reconciliation.noItems': 'Aucun article trouvé pour la réconciliation',
+    'reconciliation.noAdjustments': 'Aucun ajustement à soumettre',
   }
 };
 

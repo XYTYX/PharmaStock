@@ -8,6 +8,7 @@ import CurrentStockPage from './pages/CurrentStockPage';
 import DispensationTrackingPage from './pages/DispensationTrackingPage';
 import DispensationsPage from './pages/DispensationsPage';
 import UsersPage from './pages/UsersPage';
+import ReconciliationPage from './pages/ReconciliationPage';
 
 // Protected route component for admin-only pages
 function AdminRoute({ children }: { children: React.ReactNode }) {
@@ -46,6 +47,11 @@ function App() {
           <Route path="/users" element={
             <AdminRoute>
               <UsersPage />
+            </AdminRoute>
+          } />
+          <Route path="/reconciliation" element={
+            <AdminRoute>
+              <ReconciliationPage />
             </AdminRoute>
           } />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
