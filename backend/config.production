@@ -1,2 +1,0 @@
-# Production Environment Overrides
-DATABASE_URL="file:/mnt/usb/pharmastock/production.db"

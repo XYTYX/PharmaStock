@@ -16,6 +16,9 @@ build/
 .env.test.local
 .env.production.local
 
+# Configuration files
+ecosystem.config.js
+
 # Database files
 *.db
 *.db-journal

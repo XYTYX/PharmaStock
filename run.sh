@@ -15,8 +15,13 @@ BACKEND_PORT=3000
 ENVIRONMENT="${1:-development}"
 
 # Log files
-BACKEND_LOG="$SCRIPT_DIR/backend.log"
-FRONTEND_LOG="$SCRIPT_DIR/frontend.log"
+if [ "$ENVIRONMENT" = "production" ]; then
+    BACKEND_LOG="/var/log/pharmastock/backend.log"
+    FRONTEND_LOG="/var/log/pharmastock/frontend.log"
+else
+    BACKEND_LOG="$SCRIPT_DIR/backend.log"
+    FRONTEND_LOG="$SCRIPT_DIR/frontend.log"
+fi
 
 # Function to log messages with timestamp
 log() {
@@ -57,16 +62,12 @@ check_nodejs() {
     log "npm version: $(npm --version)"
 }
 
-# Function to check if PM2 is installed (for development)
+# Function to check if PM2 is installed
 check_pm2() {
     if ! command -v pm2 &> /dev/null; then
-        if [ "$ENVIRONMENT" = "development" ]; then
-            log "Installing PM2 for development..."
-            npm install -g pm2
-            log "PM2 installed: $(pm2 --version)"
-        else
-            log "PM2 not available for production mode"
-        fi
+        log "Installing PM2..."
+        npm install -g pm2
+        log "PM2 installed: $(pm2 --version)"
     else
         log "PM2 version: $(pm2 --version)"
     fi
@@ -79,84 +80,12 @@ install_system_dependencies() {
         apt update
         apt install -y git curl wget util-linux
         log "System dependencies installed"
-    fi
-}
-
-# Function to setup USB drive for production database
-setup_usb_database() {
-    if [ "$ENVIRONMENT" = "production" ]; then
-        log "Setting up USB drive for production database..."
         
-        # Create USB mount point
-        mkdir -p /mnt/usb
-        
-        # Check if USB is already mounted
-        if ! mountpoint -q /mnt/usb; then
-            # Find USB device (look for common USB device patterns)
-            USB_DEVICE=""
-            for device in /dev/sd*[1-9] /dev/sd*[a-z][1-9]; do
-                if [ -b "$device" ]; then
-                    # Check if it's a USB device
-                    if udevadm info --query=property --name="$device" | grep -q "ID_BUS=usb"; then
-                        USB_DEVICE="$device"
-                        break
-                    fi
-                fi
-            done
-            
-            if [ -n "$USB_DEVICE" ]; then
-                log "Found USB device: $USB_DEVICE"
-                # Mount USB drive
-                mount "$USB_DEVICE" /mnt/usb
-                log "USB drive mounted at /mnt/usb"
-            else
-                log "WARNING: No USB device found. Creating local production database directory."
-                mkdir -p /mnt/usb/pharmastock
-            fi
-        else
-            log "USB drive already mounted at /mnt/usb"
-        fi
-        
-        # Create pharmastock directory on USB
-        mkdir -p /mnt/usb/pharmastock
-        log "Database directory created: /mnt/usb/pharmastock"
-    fi
-}
-
-# Function to load environment configuration
-load_environment_config() {
-    # Set NODE_ENV based on environment parameter
-    export NODE_ENV="$ENVIRONMENT"
-    
-    # Load base configuration first
-    local base_config="$BACKEND_DIR/config.base"
-    if [ -f "$base_config" ]; then
-        log "Loading base configuration from $base_config"
-        set -a  # automatically export all variables
-        source "$base_config"
-        set +a  # stop automatically exporting
-    else
-        log "WARNING: No base config file found at $base_config, using defaults"
-        export PORT=3000
-        export FRONTEND_URL="http://localhost:3001"
-    fi
-    
-    # Load environment-specific overrides
-    local env_config="$BACKEND_DIR/config.$ENVIRONMENT"
-    if [ -f "$env_config" ]; then
-        log "Loading environment overrides from $env_config"
-        set -a  # automatically export all variables
-        source "$env_config"
-        set +a  # stop automatically exporting
-        log "Environment configuration loaded"
-    else
-        log "WARNING: No environment config file found at $env_config"
-        # Set default database URL based on environment
-        if [ "$ENVIRONMENT" = "development" ]; then
-            export DATABASE_URL="file:./prisma/dev.db"
-        else
-            export DATABASE_URL="file:/mnt/usb/pharmastock/production.db"
-        fi
+        # Create log directories for production
+        log "Creating log directories..."
+        mkdir -p /var/log/pharmastock
+        chmod 755 /var/log/pharmastock
+        log "Log directories created"
     fi
 }
 
@@ -209,158 +138,73 @@ build_application() {
     log "Application built successfully"
 }
 
-# Function to create PM2 ecosystem file
-create_pm2_ecosystem() {
-    log "Creating PM2 ecosystem file..."
+# Function to setup configuration files from examples
+setup_config_files() {
+    log "Setting up configuration files..."
     
-    # Load environment config for PM2 ecosystem creation
-    load_environment_config
+    # Setup ecosystem.config.js from example
+    if [ -f "$SCRIPT_DIR/ecosystem.config.js.example" ] && [ ! -f "$SCRIPT_DIR/ecosystem.config.js" ]; then
+        log "Creating ecosystem.config.js from example..."
+        cp "$SCRIPT_DIR/ecosystem.config.js.example" "$SCRIPT_DIR/ecosystem.config.js"
+        
+        # Replace placeholders with actual values
+        sed -i "s|{PROJECT_ROOT}|$SCRIPT_DIR|g" "$SCRIPT_DIR/ecosystem.config.js"
+        
+        log "ecosystem.config.js created from example"
+    fi
     
-    cat > "$SCRIPT_DIR/ecosystem.config.js" << EOF
-module.exports = {
-  apps: [
-    {
-      name: 'pharmastock-backend',
-      script: './backend/dist/index.js',
-      cwd: process.cwd(),
-      env: {
-        NODE_ENV: '$NODE_ENV',
-        PORT: $PORT,
-        DATABASE_URL: '$DATABASE_URL',
-        FRONTEND_URL: '$FRONTEND_URL'
-      },
-      watch: false,
-      instances: 1,
-      exec_mode: 'fork',
-      log_file: './backend.log',
-      out_file: './backend.log',
-      error_file: './backend.log',
-      log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
-    },
-    {
-      name: 'pharmastock-frontend',
-      script: 'npm',
-      args: 'run dev -- --port 3001 --host 0.0.0.0',
-      cwd: './frontend',
-      env: {
-        NODE_ENV: '$NODE_ENV'
-      },
-      watch: false,
-      instances: 1,
-      exec_mode: 'fork',
-      log_file: './frontend.log',
-      out_file: './frontend.log',
-      error_file: './frontend.log',
-      log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
-    }
-  ]
-};
-EOF
-
-    log "PM2 ecosystem file created"
+    log "Configuration files setup complete"
 }
 
-# Function to create systemd services
-create_systemd_services() {
-    log "Creating systemd services..."
+# Function to validate PM2 ecosystem file
+validate_pm2_ecosystem() {
+    log "Validating PM2 ecosystem file..."
     
-    # Load environment config for systemd service creation
-    load_environment_config
+    if [ ! -f "$SCRIPT_DIR/ecosystem.config.js" ]; then
+        log "ERROR: ecosystem.config.js not found"
+        log "Please ensure ecosystem.config.js exists in the project root"
+        exit 1
+    fi
     
-    # Backend service
-    cat > /etc/systemd/system/pharmastock-backend.service << EOF
-[Unit]
-Description=PharmaStock Backend
-After=network.target
-
-[Service]
-Type=simple
-User=root
-Group=root
-WorkingDirectory=$SCRIPT_DIR/backend
-ExecStart=/usr/bin/npm start
-Restart=always
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier=pharmastock-backend
-
-# Environment variables
-Environment=NODE_ENV=$NODE_ENV
-Environment=PORT=$PORT
-Environment=DATABASE_URL=$DATABASE_URL
-Environment=FRONTEND_URL=$FRONTEND_URL
-
-# Security settings
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=strict
-ProtectHome=true
-ReadWritePaths=$SCRIPT_DIR /mnt/usb
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    # Frontend service
-    cat > /etc/systemd/system/pharmastock-frontend.service << EOF
-[Unit]
-Description=PharmaStock Frontend
-After=network.target
-
-[Service]
-Type=simple
-User=root
-Group=root
-WorkingDirectory=$SCRIPT_DIR/frontend
-ExecStart=/usr/bin/npm run preview -- --port 3001 --host 0.0.0.0
-Restart=always
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier=pharmastock-frontend
-
-# Environment variables
-Environment=NODE_ENV=production
-
-# Security settings
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=strict
-ProtectHome=true
-ReadWritePaths=$SCRIPT_DIR
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    # Reload systemd
-    systemctl daemon-reload
+    # Test if the ecosystem file is valid JavaScript
+    if ! node -c "$SCRIPT_DIR/ecosystem.config.js" 2>/dev/null; then
+        log "ERROR: ecosystem.config.js contains invalid JavaScript"
+        exit 1
+    fi
     
-    log "Systemd services created"
+    log "PM2 ecosystem file validated"
+}
+
+# Function to setup PM2 startup script
+setup_pm2_startup() {
+    log "Setting up PM2 startup script..."
+    
+    if [ "$ENVIRONMENT" = "production" ]; then
+        # Generate PM2 startup script for production
+        pm2 startup systemd -u root --hp /root
+        log "PM2 startup script generated for production"
+    else
+        # Generate PM2 startup script for development
+        pm2 startup
+        log "PM2 startup script generated for development"
+    fi
 }
 
 # Function to start backend
 start_backend() {
     log "Starting backend on port $BACKEND_PORT..."
     
-    if [ "$ENVIRONMENT" = "development" ]; then
-        # Development: use PM2
-        if command -v pm2 &> /dev/null; then
-            log "Starting backend with PM2..."
-            pm2 start "$SCRIPT_DIR/ecosystem.config.js" --only pharmastock-backend
-            log "Backend started with PM2"
+    if command -v pm2 &> /dev/null; then
+        log "Starting backend with PM2..."
+        if [ "$ENVIRONMENT" = "production" ]; then
+            pm2 start "$SCRIPT_DIR/ecosystem.config.js" --only pharmastock-backend --env production
         else
-            log "ERROR: PM2 not available for development mode"
-            exit 1
+            pm2 start "$SCRIPT_DIR/ecosystem.config.js" --only pharmastock-backend
         fi
+        log "Backend started with PM2"
     else
-        # Production: use systemd
-        log "Starting backend with systemd..."
-        systemctl start pharmastock-backend
-        
-        systemctl enable pharmastock-backend
-        log "Backend started with systemd"
+        log "ERROR: PM2 not available"
+        exit 1
     fi
 }
 
@@ -368,22 +212,17 @@ start_backend() {
 start_frontend() {
     log "Starting frontend on port $FRONTEND_PORT..."
     
-    if [ "$ENVIRONMENT" = "development" ]; then
-        # Development: use PM2
-        if command -v pm2 &> /dev/null; then
-            log "Starting frontend with PM2..."
-            pm2 start "$SCRIPT_DIR/ecosystem.config.js" --only pharmastock-frontend
-            log "Frontend started with PM2"
+    if command -v pm2 &> /dev/null; then
+        log "Starting frontend with PM2..."
+        if [ "$ENVIRONMENT" = "production" ]; then
+            pm2 start "$SCRIPT_DIR/ecosystem.config.js" --only pharmastock-frontend --env production
         else
-            log "ERROR: PM2 not available for development mode"
-            exit 1
+            pm2 start "$SCRIPT_DIR/ecosystem.config.js" --only pharmastock-frontend
         fi
+        log "Frontend started with PM2"
     else
-        # Production: use systemd
-        log "Starting frontend with systemd..."
-        systemctl start pharmastock-frontend
-        systemctl enable pharmastock-frontend
-        log "Frontend started with systemd"
+        log "ERROR: PM2 not available"
+        exit 1
     fi
 }
 
@@ -391,24 +230,15 @@ start_frontend() {
 stop_services() {
     log "Stopping services..."
     
-    if [ "$ENVIRONMENT" = "development" ]; then
-        # Development: use PM2
-        if command -v pm2 &> /dev/null; then
-            log "Stopping services with PM2..."
-            pm2 stop pharmastock-backend pharmastock-frontend 2>/dev/null || true
-            pm2 delete pharmastock-backend pharmastock-frontend 2>/dev/null || true
-            log "Services stopped with PM2"
-        else
-            log "PM2 not available, trying to kill processes manually..."
-            pkill -f "pharmastock-backend" 2>/dev/null || true
-            pkill -f "pharmastock-frontend" 2>/dev/null || true
-        fi
+    if command -v pm2 &> /dev/null; then
+        log "Stopping services with PM2..."
+        pm2 stop pharmastock-backend pharmastock-frontend 2>/dev/null || true
+        pm2 delete pharmastock-backend pharmastock-frontend 2>/dev/null || true
+        log "Services stopped with PM2"
     else
-        # Production: use systemd
-        log "Stopping services with systemd..."
-        systemctl stop pharmastock-backend pharmastock-frontend 2>/dev/null || true
-        systemctl disable pharmastock-backend pharmastock-frontend 2>/dev/null || true
-        log "Services stopped with systemd"
+        log "PM2 not available, trying to kill processes manually..."
+        pkill -f "pharmastock-backend" 2>/dev/null || true
+        pkill -f "pharmastock-frontend" 2>/dev/null || true
     fi
     
     log "Services stopped"
@@ -418,20 +248,11 @@ stop_services() {
 show_status() {
     log "=== PharmaStock Status ($ENVIRONMENT) ==="
     
-    if [ "$ENVIRONMENT" = "development" ]; then
-        # Development: check PM2
-        if command -v pm2 &> /dev/null; then
-            log "PM2 Status:"
-            pm2 status
-        else
-            log "PM2 not available"
-        fi
+    if command -v pm2 &> /dev/null; then
+        log "PM2 Status:"
+        pm2 status
     else
-        # Production: check systemd
-        log "Systemd Status:"
-        systemctl status pharmastock-backend --no-pager -l || true
-        echo ""
-        systemctl status pharmastock-frontend --no-pager -l || true
+        log "PM2 not available"
     fi
 }
 
@@ -459,10 +280,10 @@ show_usage() {
     echo "  stop         - Stop the application"
     echo "  restart      - Restart the application"
     echo "  status       - Show status"
-    echo "  logs         - Follow logs (PM2 for dev, systemd for prod)"
+    echo "  logs         - Follow PM2 logs"
     echo "  cleanup      - Stop and clean up"
-    echo "  pm2          - PM2 management (dev only)"
-    echo "  systemd      - Systemd management (prod only)"
+    echo "  pm2          - PM2 management"
+    echo "  pm2-save     - Save PM2 configuration"
     echo ""
     echo "Examples:"
     echo "  $0                           # Development mode, start"
@@ -489,25 +310,18 @@ main() {
             check_nodejs
             check_pm2
             install_system_dependencies
-            setup_usb_database
-            load_environment_config
+            setup_config_files
             install_dependencies
             build_application
-            create_pm2_ecosystem
-            create_systemd_services
+            validate_pm2_ecosystem
+            setup_pm2_startup
             start_backend
             start_frontend
             log "=== Setup Complete ==="
             log "Backend: http://localhost:$BACKEND_PORT"
             log "Frontend: http://localhost:$FRONTEND_PORT"
-            log "Database: $DATABASE_URL"
-            if [ "$ENVIRONMENT" = "development" ]; then
-                log "PM2 Logs: pm2 logs"
-                log "PM2 Status: pm2 status"
-            else
-                log "Systemd Logs: journalctl -u pharmastock-backend -f"
-                log "Systemd Status: systemctl status pharmastock-backend"
-            fi
+            log "PM2 Logs: pm2 logs"
+            log "PM2 Status: pm2 status"
             log "Use '$0 $ENVIRONMENT stop' to stop the application"
             ;;
         install)
@@ -531,8 +345,7 @@ main() {
             check_root
             check_nodejs
             install_system_dependencies
-            setup_usb_database
-            load_environment_config
+            setup_config_files
             install_dependencies
             build_application
             start_backend
@@ -540,7 +353,6 @@ main() {
             log "=== PharmaStock Started ==="
             log "Backend: http://localhost:$BACKEND_PORT"
             log "Frontend: http://localhost:$FRONTEND_PORT"
-            log "Database: $DATABASE_URL"
             log "Logs: $BACKEND_LOG and $FRONTEND_LOG"
             ;;
         stop)
@@ -563,21 +375,16 @@ main() {
             log "=== Cleanup Complete ==="
             ;;
         logs)
-            if [ "$ENVIRONMENT" = "development" ]; then
-                log "=== PM2 Logs ==="
-                pm2 logs
-            else
-                log "=== Systemd Logs ==="
-                journalctl -u pharmastock-backend -u pharmastock-frontend -f
-            fi
+            log "=== PM2 Logs ==="
+            pm2 logs
             ;;
         pm2)
             log "=== PM2 Management ==="
             pm2 $3 $4 $5
             ;;
-        systemd)
-            log "=== Systemd Management ==="
-            systemctl $3 pharmastock-backend pharmastock-frontend
+        pm2-save)
+            log "=== Saving PM2 Configuration ==="
+            pm2 save
             ;;
         *)
             show_usage

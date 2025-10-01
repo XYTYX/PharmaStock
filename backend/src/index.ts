@@ -18,6 +18,19 @@ const PORT = process.env.PORT || 3000;
 
 // Initialize Prisma client
 export const prisma = new PrismaClient();
+console.log('Prisma client initialized with database URL:', process.env.DATABASE_URL);
+console.log('Current working directory:', process.cwd());
+
+// Test Prisma connection to the database
+prisma.$connect()
+  .then(() => {
+    console.log('✅ Successfully connected to the database.');
+  })
+  .catch((err) => {
+    console.error('❌ Failed to connect to the database:', err);
+    process.exit(1);
+  });
+
 
 // Middleware
 app.use(helmet());

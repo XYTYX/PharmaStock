@@ -13,12 +13,19 @@ module.exports = {
         FRONTEND_URL: 'http://localhost:3001',
         JWT_SECRET: 'your-super-secret-jwt-key-change-this-in-production'
       },
+      env_production: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+        DATABASE_URL: 'file:/var/cache/pharmastock.db',
+        FRONTEND_URL: 'http://localhost:3001',
+        // Production-specific log locations
+        log_file: '/var/log/pharmastock/backend.log',
+        out_file: '/var/log/pharmastock/backend.log',
+        error_file: '/var/log/pharmastock/backend.log'
+      },
       watch: false,
       instances: 1,
       exec_mode: 'fork',
-      log_file: './backend.log',
-      out_file: './backend.log',
-      error_file: './backend.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
     },
     {
@@ -29,12 +36,16 @@ module.exports = {
       env: {
         NODE_ENV: 'development'
       },
+      env_production: {
+        NODE_ENV: 'production',
+        // Production-specific log locations
+        log_file: '/var/log/pharmastock/frontend.log',
+        out_file: '/var/log/pharmastock/frontend.log',
+        error_file: '/var/log/pharmastock/frontend.log'
+      },
       watch: false,
       instances: 1,
       exec_mode: 'fork',
-      log_file: './frontend.log',
-      out_file: './frontend.log',
-      error_file: './frontend.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
     }
   ]
