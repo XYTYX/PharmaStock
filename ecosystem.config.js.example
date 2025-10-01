@@ -12,6 +12,9 @@ module.exports = {
         DATABASE_URL: 'file:{PROJECT_ROOT}/backend/prisma/dev.db',
         FRONTEND_URL: 'http://localhost:3001',
         JWT_SECRET: 'your-super-secret-jwt-key-change-this-in-production'
+        log_file: '/dev/null',
+        out_file: '/dev/null',
+        error_file: '/dev/null'
       },
       env_production: {
         NODE_ENV: 'production',
@@ -35,6 +38,9 @@ module.exports = {
       cwd: path.join(__dirname, 'frontend'),
       env: {
         NODE_ENV: 'development'
+        log_file: '/dev/null',
+        out_file: '/dev/null',
+        error_file: '/dev/null'
       },
       env_production: {
         NODE_ENV: 'production',
