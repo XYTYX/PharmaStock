@@ -35,7 +35,12 @@ prisma.$connect()
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: [process.env.FRONTEND_URL || 'http://localhost:3001', 'http://new-sight.local'],
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:3001',
+    'http://new-sight.local:3001',
+    'http://localhost:3001',
+    'http://127.0.0.1:3001'
+  ],
   credentials: true
 }));
 app.use(express.json());
