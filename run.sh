@@ -175,21 +175,6 @@ validate_pm2_ecosystem() {
     log "PM2 ecosystem file validated"
 }
 
-# Function to setup PM2 startup script
-setup_pm2_startup() {
-    log "Setting up PM2 startup script..."
-    
-    if [ "$ENVIRONMENT" = "production" ]; then
-        # Generate PM2 startup script for production
-        pm2 startup systemd -u root --hp /root
-        log "PM2 startup script generated for production"
-    else
-        # Generate PM2 startup script for development
-        pm2 startup
-        log "PM2 startup script generated for development"
-    fi
-}
-
 # Function to start backend
 start_backend() {
     log "Starting backend on port $BACKEND_PORT..."
@@ -314,7 +299,6 @@ main() {
             install_dependencies
             build_application
             validate_pm2_ecosystem
-            setup_pm2_startup
             start_backend
             start_frontend
             log "=== Setup Complete ==="
