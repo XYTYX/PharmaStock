@@ -5,6 +5,10 @@ const API_BASE_URL = (import.meta as any).env.MODE === 'production'
   ? ((import.meta as any).env.VITE_API_URL || 'http://new-sight.local')
   : 'http://localhost:3000';
 
+// Debug logging
+console.log('Environment mode:', (import.meta as any).env.MODE);
+console.log('API Base URL:', API_BASE_URL);
+
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
