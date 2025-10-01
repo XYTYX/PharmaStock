@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { LoginRequest, LoginResponse, User } from '../types';
 
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? (process.env.VITE_API_URL || 'http://new-sight.local')
+  : 'http://localhost:3000';
 
 // Create axios instance
 const api = axios.create({
