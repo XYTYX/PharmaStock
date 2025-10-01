@@ -11,5 +11,18 @@ export default defineConfig({
   preview: {
     port: 3001,
     host: '0.0.0.0'
-  }
+  },
+  // Allow new-sight.local in production
+  ...(process.env.NODE_ENV === 'production' && {
+    server: {
+      port: 3001,
+      host: '0.0.0.0',
+      allowedHosts: ['new-sight.local']
+    },
+    preview: {
+      port: 3001,
+      host: '0.0.0.0',
+      allowedHosts: ['new-sight.local']
+    }
+  })
 })
