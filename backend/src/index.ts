@@ -45,13 +45,28 @@ const corsOptions = {
 };
 
 console.log('CORS Configuration:', corsOptions);
+
+// Debug CORS middleware - MUST be before cors() middleware
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    console.log('🔍 CORS Preflight Request Detected:');
+    console.log('  Origin:', req.headers.origin);
+    console.log('  Request Method:', req.headers['access-control-request-method']);
+    console.log('  Request Headers:', req.headers['access-control-request-headers']);
+    console.log('  Allowed Origins:', corsOptions.origin);
+    console.log('  Origin Allowed:', corsOptions.origin.includes(req.headers.origin || ''));
+  }
+  next();
+});
+
 app.use(cors(corsOptions));
 
-// Debug middleware to log CORS requests
+// Debug middleware to log ALL requests
 app.use((req, res, next) => {
-  console.log(`Incoming request: ${req.method} ${req.url}`);
-  console.log('Origin:', req.headers.origin);
-  console.log('User-Agent:', req.headers['user-agent']);
+  console.log(`📥 Incoming request: ${req.method} ${req.url}`);
+  console.log('  Origin:', req.headers.origin);
+  console.log('  User-Agent:', req.headers['user-agent']);
+  console.log('  Headers:', JSON.stringify(req.headers, null, 2));
   next();
 });
 app.use(express.json());
@@ -60,6 +75,21 @@ app.use(express.urlencoded({ extended: true }));
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// CORS test endpoint
+app.options('/test-cors', (req, res) => {
+  console.log('🧪 CORS Test Endpoint Hit');
+  console.log('Request Origin:', req.headers.origin);
+  res.status(200).json({ message: 'CORS test successful' });
+});
+
+app.post('/test-cors', (req, res) => {
+  res.json({ 
+    message: 'POST request successful',
+    origin: req.headers.origin,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // API Routes
