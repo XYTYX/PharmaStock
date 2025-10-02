@@ -112,15 +112,6 @@ router.post('/adjust', async (req, res) => {
     const previousStock = inventory?.currentStock || 0;
     const newStock = previousStock + quantity;
 
-    // Validate stock level
-    if (newStock < 0) {
-      return res.status(400).json({ 
-        error: 'Insufficient stock for this adjustment',
-        currentStock: previousStock,
-        requestedAdjustment: quantity
-      });
-    }
-
     // Update inventory and create log in transaction
     const result = await prisma.$transaction(async (tx) => {
       // Update or create inventory

@@ -644,7 +644,7 @@ export default function DispensationsPage() {
                       type="button"
                       onClick={() => setDispensationForm(prev => ({ 
                         ...prev, 
-                        quantity: Math.max(1, prev.quantity - 1) 
+                        quantity: prev.quantity - 1 
                       }))}
                       className="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50"
                     >
@@ -652,11 +652,10 @@ export default function DispensationsPage() {
                     </button>
                     <input
                       type="number"
-                      min="1"
                       value={dispensationForm.quantity}
                       onChange={(e) => setDispensationForm(prev => ({ 
                         ...prev, 
-                        quantity: Math.max(1, parseInt(e.target.value) || 1) 
+                        quantity: parseInt(e.target.value) || 0 
                       }))}
                       className="w-20 px-3 py-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
