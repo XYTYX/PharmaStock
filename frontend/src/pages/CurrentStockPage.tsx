@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuthStore } from '../store/authStore';
+import { generateCountingWorksheets } from '../services/pdfGenerator';
 
 export default function CurrentStockPage() {
   const { t } = useLanguage();
@@ -104,6 +105,36 @@ export default function CurrentStockPage() {
     }
   };
 
+  const handleStartCount = () => {
+    // Filter active medicines with stock > 0
+    const activeMedicines = inventory.filter((item: any) => 
+      item.item?.isActive && item.currentStock > 0
+    );
+
+    if (activeMedicines.length === 0) {
+      alert('No active medicines with stock available for counting.');
+      return;
+    }
+
+    // Generate unique combinations of medicine name, expiry date, and form
+    const uniqueCombinations = new Map();
+    
+    activeMedicines.forEach((item: any) => {
+      const key = `${item.item.name}-${item.item.expiryDate || 'No Expiry'}-${item.item.form}`;
+      if (!uniqueCombinations.has(key)) {
+        uniqueCombinations.set(key, {
+          name: item.item.name,
+          expiryDate: item.item.expiryDate || 'No Expiry',
+          form: item.item.form,
+          currentStock: item.currentStock
+        });
+      }
+    });
+
+    // Generate PDF worksheets
+    generateCountingWorksheets(Array.from(uniqueCombinations.values()), t);
+  };
+
   // Fetch all inventory data once
   const { data: stockData, isLoading, error } = useQuery({
     queryKey: ['current-stock-all'],
@@ -193,14 +224,22 @@ export default function CurrentStockPage() {
             {t('inventory.currentStock')} - {t('inventory.subtitle')}
           </p>
         </div>
-        {isAdmin && (
+        <div className="flex gap-3">
           <button
-            onClick={handleCreate}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onClick={handleStartCount}
+            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
           >
-            {t('inventory.modal.addNewItem')}
+            Start Count
           </button>
-        )}
+          {isAdmin && (
+            <button
+              onClick={handleCreate}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {t('inventory.modal.addNewItem')}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -447,6 +486,7 @@ function ItemModal({ item, onSubmit, onClose, isLoading }: ItemModalProps) {
                 <option value="GEL">{t('inventory.form.gel')}</option>
                 <option value="EYE_DROPS">{t('inventory.form.eyeDrops')}</option>
                 <option value="POWDER">{t('inventory.form.powder')}</option>
+                <option value="CREAM">{t('inventory.form.cream')}</option>
               </select>
             </div>
 

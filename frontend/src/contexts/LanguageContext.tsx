@@ -118,6 +118,22 @@ const translations = {
     'inventory.modal.saving': 'Saving...',
     'inventory.modal.adjustHint': 'To adjust stock quantities, please use the reconciliation feature.',
     
+    // Counting
+    'counting.box': 'Box',
+    'counting.package': 'Package',
+    'counting.individual': 'Individual',
+    'counting.numberOfBoxes': 'Number of boxes',
+    'counting.numberOfPackagesInBox': 'Number of packages in a box',
+    'counting.numberOfIndividual': 'Number of individual',
+    'counting.horizontalCount': 'Horizontal Count',
+    'counting.verticalCount': 'Vertical<br/>Count',
+    'counting.numberOfPackages': 'Number of packages',
+    'counting.total': 'Total',
+    'counting.medicinesPerPackage': 'Medicines per Package:',
+    'counting.horizontalVerticalCount': 'Horizontal Count x Vertical Count',
+    'counting.formula': 'Horizontal count x vertical count x number of packages',
+    'counting.boxFormula': 'number of boxes x packages per box x Medicines per package',
+    
     // Dispensation
     'dispensation.subtitle': 'History of inventory movements and dispensations',
     'dispensation.loading': 'Loading...',
@@ -383,6 +399,22 @@ const translations = {
     'inventory.modal.update': 'Mettre à jour',
     'inventory.modal.saving': 'Enregistrement...',
     'inventory.modal.adjustHint': 'Pour ajuster les quantités de stock, veuillez utiliser la fonction de réconciliation.',
+    
+    // Counting
+    'counting.box': 'Boîte',
+    'counting.package': 'Emballage',
+    'counting.individual': 'Individuel',
+    'counting.numberOfBoxes': 'Nombre de boîtes',
+    'counting.numberOfPackagesInBox': 'Nombre d\'emballages dans une boîte',
+    'counting.numberOfIndividual': 'Nombre d\'individuels',
+    'counting.horizontalCount': 'Compte Horizontal',
+    'counting.verticalCount': 'Compte<br/>Vertical',
+    'counting.numberOfPackages': 'Nombre d\'emballages',
+    'counting.total': 'Total',
+    'counting.medicinesPerPackage': 'Médicaments par Emballage:',
+    'counting.horizontalVerticalCount': 'Compte Horizontal x Compte Vertical',
+    'counting.formula': 'Compte horizontal x compte vertical x nombre d\'emballages',
+    'counting.boxFormula': 'nombre de boîtes x emballages par boîte x Médicaments par emballage',
     
     // Dispensation
     'dispensation.subtitle': 'Historique des mouvements d\'inventaire et dispensations',
