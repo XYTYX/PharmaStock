@@ -8,7 +8,7 @@ const router = express.Router();
 const inventoryAdjustmentSchema = z.object({
   itemId: z.string().min(1, 'Item is required'),
   quantity: z.number().int(),
-  reason: z.enum(['PURCHASE', 'DISPENSATION', 'ADJUSTMENT', 'TRANSFER', 'EXPIRED', 'DAMAGED', 'RETURN', 'DISPOSE']),
+  reason: z.enum(['PURCHASE', 'DISPENSATION', 'ADJUSTMENT', 'DISPOSE']),
   patientName: z.string().optional(),
   prescriptionNumber: z.string().optional(),
   notes: z.string().optional()
@@ -484,6 +484,72 @@ router.put('/items/:id/stock', requireRole(['ADMIN']), async (req, res) => {
       return res.status(400).json({ error: 'Validation error', details: error.errors });
     }
     res.status(500).json({ error: 'Failed to update stock' });
+  }
+});
+
+// Delete inventory log and update inventory accordingly
+router.delete('/logs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user.id;
+
+    // Get the log to delete
+    const log = await prisma.inventoryLog.findUnique({
+      where: { id },
+      include: {
+        item: true
+      }
+    });
+
+    if (!log) {
+      return res.status(404).json({ error: 'Inventory log not found' });
+    }
+
+    // Check if the item is still active (can only delete logs for active items)
+    if (!log.item.isActive) {
+      return res.status(400).json({ error: 'Cannot delete log for inactive item' });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Get current inventory
+      const inventory = await tx.inventory.findFirst({
+        where: { itemId: log.itemId }
+      });
+
+      if (!inventory) {
+        throw new Error('Inventory record not found');
+      }
+
+      // Reverse the stock change by subtracting the log's totalAmount
+      const previousStock = inventory.currentStock;
+      const newStock = previousStock - log.totalAmount;
+
+      // Update inventory
+      await tx.inventory.update({
+        where: { id: inventory.id },
+        data: { currentStock: newStock }
+      });
+
+      // Delete the log
+      await tx.inventoryLog.delete({
+        where: { id }
+      });
+
+      return {
+        deletedLog: log,
+        previousStock,
+        newStock,
+        stockChange: -log.totalAmount
+      };
+    });
+
+    res.json({ 
+      message: 'Inventory log deleted successfully',
+      result 
+    });
+  } catch (error) {
+    console.error('Error deleting inventory log:', error);
+    res.status(500).json({ error: 'Failed to delete inventory log' });
   }
 });
 

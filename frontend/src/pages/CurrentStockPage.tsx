@@ -12,6 +12,7 @@ interface MedicineGroup {
       expiryDate: string;
       currentStock: number;
       itemId: string;
+      forecastMonths?: number; // Individual forecast for this expiry date
     }>;
   }>;
   totalStock: number;
@@ -332,8 +333,112 @@ export default function CurrentStockPage() {
     // Calculate forecast for each medicine
     groups.forEach((group) => {
       if (group.lastMonthDispensations > 0 && group.totalStock > 0) {
-        // Calculate months until stock runs out based on last month's usage
-        group.forecastMonths = Math.floor(group.totalStock / group.lastMonthDispensations);
+        // Collect all non-expired stock with their expiry dates and references to form entries
+        const stockEntries: Array<{ 
+          expiryDate: string; 
+          stock: number; 
+          itemId: string;
+          formEntry: any;
+          expiryEntry: any;
+        }> = [];
+        
+        group.forms.forEach(formEntry => {
+          formEntry.expiryDates.forEach(expiryEntry => {
+            if (!isExpired(expiryEntry.expiryDate)) {
+              stockEntries.push({
+                expiryDate: expiryEntry.expiryDate,
+                stock: expiryEntry.currentStock,
+                itemId: expiryEntry.itemId,
+                formEntry,
+                expiryEntry
+              });
+            }
+          });
+        });
+        
+        if (stockEntries.length === 0) {
+          // If all stock is expired, set forecast to 0
+          group.forecastMonths = 0;
+          // Set individual forecasts to 0
+          group.forms.forEach(formEntry => {
+            formEntry.expiryDates.forEach(expiryEntry => {
+              expiryEntry.forecastMonths = 0;
+            });
+          });
+          return;
+        }
+        
+        // Sort by expiry date (earliest first)
+        stockEntries.sort((a, b) => {
+          const dateA = parseExpiryDate(a.expiryDate);
+          const dateB = parseExpiryDate(b.expiryDate);
+          return dateA.getTime() - dateB.getTime();
+        });
+        
+        // Calculate forecast chronologically
+        let remainingStock = 0;
+        let totalForecastMonths = 0;
+        const currentDate = new Date();
+        const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        
+        for (const entry of stockEntries) {
+          const expiryDate = parseExpiryDate(entry.expiryDate);
+          const monthsUntilExpiry = Math.max(0, 
+            (expiryDate.getFullYear() - currentMonth.getFullYear()) * 12 + 
+            (expiryDate.getMonth() - currentMonth.getMonth())
+          );
+          
+          // Add this batch of stock to our remaining stock
+          remainingStock += entry.stock;
+          
+          // Calculate how many months this batch will last
+          const monthsThisBatchLasts = Math.floor(remainingStock / group.lastMonthDispensations);
+          
+          // The effective months for this batch is the minimum of:
+          // 1. How long this batch lasts based on usage
+          // 2. How long until this batch expires
+          const effectiveMonths = Math.min(monthsThisBatchLasts, monthsUntilExpiry);
+          
+          // Calculate percentage of this batch that will be used before expiry
+          let usagePercentage = 0;
+          if (monthsUntilExpiry > 0 && group.lastMonthDispensations > 0) {
+            // Calculate how much of this batch will be consumed
+            const stockConsumed = Math.min(entry.stock, effectiveMonths * group.lastMonthDispensations);
+            usagePercentage = Math.round((stockConsumed / entry.stock) * 100);
+          }
+          
+          // Store individual forecast for this expiry date (now as percentage)
+          entry.expiryEntry.forecastMonths = usagePercentage;
+          
+          if (effectiveMonths > 0) {
+            totalForecastMonths += effectiveMonths;
+            // Reduce remaining stock by what was consumed
+            remainingStock -= effectiveMonths * group.lastMonthDispensations;
+          }
+          
+          // If we've used up all stock or reached expiry, break
+          if (remainingStock <= 0 || effectiveMonths === monthsUntilExpiry) {
+            break;
+          }
+        }
+        
+        // Set remaining expiry dates to 0 forecast if they weren't processed
+        group.forms.forEach(formEntry => {
+          formEntry.expiryDates.forEach(expiryEntry => {
+            if (expiryEntry.forecastMonths === undefined) {
+              expiryEntry.forecastMonths = 0;
+            }
+          });
+        });
+        
+        group.forecastMonths = totalForecastMonths;
+      } else {
+        // Set all individual forecasts to undefined if no dispensations or stock
+        group.forms.forEach(formEntry => {
+          formEntry.expiryDates.forEach(expiryEntry => {
+            expiryEntry.forecastMonths = undefined;
+          });
+        });
       }
     });
 
@@ -612,13 +717,26 @@ function MedicineCard({ group, translateForm, isExpired, canEdit, onEdit, isInac
             <div className="space-y-1">
               {formEntry.expiryDates.map((expiryEntry, expiryIndex) => (
                 <div key={expiryIndex} className="flex justify-between items-center text-sm">
-                  <span className={`${
-                    isExpired(expiryEntry.expiryDate) 
-                      ? 'text-red-600 font-medium' 
-                      : 'text-gray-600'
-                  }`}>
-                    {expiryEntry.expiryDate}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className={`${
+                      isExpired(expiryEntry.expiryDate) 
+                        ? 'text-red-600 font-medium' 
+                        : 'text-gray-600'
+                    }`}>
+                      {expiryEntry.expiryDate}
+                    </span>
+                    {expiryEntry.forecastMonths !== null && expiryEntry.forecastMonths !== undefined && (
+                      <span className={`text-xs ${
+                        expiryEntry.forecastMonths === 0 
+                          ? 'text-red-500' 
+                          : expiryEntry.forecastMonths <= 75 
+                            ? 'text-yellow-600' 
+                            : 'text-green-600'
+                      }`}>
+                        {expiryEntry.forecastMonths === 0 ? '0% used' : `will use ${expiryEntry.forecastMonths}%`}
+                      </span>
+                    )}
+                  </div>
                   <span className="font-medium text-gray-900">
                     {expiryEntry.currentStock}
                   </span>
@@ -638,7 +756,7 @@ function MedicineCard({ group, translateForm, isExpired, canEdit, onEdit, isInac
         
         {group.forecastMonths !== null && (
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Forecast:</span>
+            <span className="text-gray-600">Total Forecast:</span>
             <span className={`font-medium ${
               group.forecastMonths <= 3 ? 'text-red-600' : 
               group.forecastMonths <= 6 ? 'text-yellow-600' : 
@@ -698,6 +816,17 @@ function ItemSelectionModal({ medicineGroup, translateForm, isExpired, onSelectI
                             <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
                               Expired
                             </span>
+                          )}
+                          {expiryEntry.forecastMonths !== null && expiryEntry.forecastMonths !== undefined && (
+                            <div className={`text-xs mt-1 ${
+                              expiryEntry.forecastMonths === 0 
+                                ? 'text-red-500' 
+                                : expiryEntry.forecastMonths <= 75 
+                                  ? 'text-yellow-600' 
+                                  : 'text-green-600'
+                            }`}>
+                              {expiryEntry.forecastMonths === 0 ? '0% used' : `will use ${expiryEntry.forecastMonths}%`}
+                            </div>
                           )}
                         </div>
                         <div className="text-sm text-gray-600">

@@ -141,6 +141,11 @@ export const inventoryApi = {
     const response = await api.put(`/inventory/items/${id}/deactivate`);
     return response.data;
   },
+
+  deleteInventoryLog: async (id: string) => {
+    const response = await api.delete(`/inventory/logs/${id}`);
+    return response.data;
+  },
 };
 
 // Users API

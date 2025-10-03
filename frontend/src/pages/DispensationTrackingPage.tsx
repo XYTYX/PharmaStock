@@ -8,8 +8,8 @@ export default function DispensationTrackingPage() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
 
-  // All users can undo actions
-  const canUndo = true;
+  // All users can delete actions
+  const canDelete = true;
   
   // Calculate date range for last two months inclusive of today
   const getLastTwoMonthsDateRange = () => {
@@ -66,59 +66,45 @@ export default function DispensationTrackingPage() {
 
   const logs = inventoryLogs?.logs || [];
 
-  // Check if an item can be undone (i.e., if it's still active)
-  const canUndoItem = (log: any) => {
+  // Check if an item can be deleted (i.e., if it's still active and is a dispensation)
+  const canDeleteItem = (log: any) => {
     if (!stockData?.inventory || !log.item?.id) return false;
+    if (log.reason !== 'DISPENSATION') return false;
     
     const currentItem = stockData.inventory.find((inv: any) => inv.item?.id === log.item.id);
     return currentItem?.item?.isActive === true;
   };
 
-  // Undo mutation
-  const undoLogMutation = useMutation({
+  // Delete mutation
+  const deleteLogMutation = useMutation({
     mutationFn: async (log: any) => {
-      // Create a reversal adjustment
-      return inventoryApi.createInventoryAdjustment({
-        itemId: log.itemId,
-        quantity: -log.totalAmount, // Reverse the quantity
-        reason: 'ADJUSTMENT',
-        notes: t('dispensation.undoNote').replace('{originalDate}', new Date(log.createdAt).toLocaleDateString()).replace('{itemName}', log.item?.name || 'Unknown Item')
-      });
+      return inventoryApi.deleteInventoryLog(log.id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory-logs'] });
       queryClient.invalidateQueries({ queryKey: ['current-stock-all'] });
-      alert(t('dispensation.undoSuccess'));
+      alert(t('dispensation.deleteSuccess'));
     },
     onError: (error) => {
-      console.error('Error undoing dispensation:', error);
-      alert(t('dispensation.undoError'));
+      console.error('Error deleting log:', error);
+      alert(t('dispensation.deleteError'));
     }
   });
 
-  const handleUndoLog = (log: any) => {
+  const handleDeleteLog = (log: any) => {
     const actionType = log.reason === 'DISPENSATION' ? t('dispensation.dispensation') : 
                       log.reason === 'PURCHASE' ? t('dispensation.purchase') :
                       log.reason === 'ADJUSTMENT' ? t('dispensation.adjustment') :
-                      log.reason === 'TRANSFER' ? t('dispensation.transfer') :
-                      log.reason === 'EXPIRED' ? t('dispensation.expired') :
-                      log.reason === 'DAMAGED' ? t('dispensation.damaged') :
-                      log.reason === 'RETURN' ? t('dispensation.return') :
                       log.reason === 'DISPOSE' ? t('dispensation.dispose') :
                       log.reason;
     
-    const confirmMessage = log.totalAmount < 0 
-      ? t('dispensation.confirmUndoNegative')
-          .replace('{actionType}', actionType)
-          .replace('{quantity}', Math.abs(log.totalAmount).toString())
-          .replace('{itemName}', log.item?.name || 'Unknown Item')
-      : t('dispensation.confirmUndoPositive')
-          .replace('{actionType}', actionType)
-          .replace('{quantity}', Math.abs(log.totalAmount).toString())
-          .replace('{itemName}', log.item?.name || 'Unknown Item');
+    const confirmMessage = t('dispensation.confirmDelete')
+        .replace('{actionType}', actionType)
+        .replace('{quantity}', Math.abs(log.totalAmount).toString())
+        .replace('{itemName}', log.item?.name || 'Unknown Item');
 
     if (window.confirm(confirmMessage)) {
-      undoLogMutation.mutate(log);
+      deleteLogMutation.mutate(log);
     }
   };
 
@@ -127,10 +113,6 @@ export default function DispensationTrackingPage() {
       PURCHASE: 'bg-green-100 text-green-800',
       DISPENSATION: 'bg-blue-100 text-blue-800',
       ADJUSTMENT: 'bg-yellow-100 text-yellow-800',
-      TRANSFER: 'bg-purple-100 text-purple-800',
-      EXPIRED: 'bg-red-100 text-red-800',
-      DAMAGED: 'bg-red-100 text-red-800',
-      RETURN: 'bg-gray-100 text-gray-800',
       DISPOSE: 'bg-orange-100 text-orange-800'
     };
 
@@ -139,10 +121,6 @@ export default function DispensationTrackingPage() {
         case 'PURCHASE': return t('dispensation.purchase');
         case 'DISPENSATION': return t('dispensation.dispensation');
         case 'ADJUSTMENT': return t('dispensation.adjustment');
-        case 'TRANSFER': return t('dispensation.transfer');
-        case 'EXPIRED': return t('dispensation.expired');
-        case 'DAMAGED': return t('dispensation.damaged');
-        case 'RETURN': return t('dispensation.return');
         case 'DISPOSE': return t('dispensation.dispose');
         default: return reason;
       }
@@ -243,10 +221,7 @@ export default function DispensationTrackingPage() {
               <option value="PURCHASE">{t('dispensation.purchase')}</option>
               <option value="DISPENSATION">{t('dispensation.dispensation')}</option>
               <option value="ADJUSTMENT">{t('dispensation.adjustment')}</option>
-              <option value="TRANSFER">{t('dispensation.transfer')}</option>
-              <option value="EXPIRED">{t('dispensation.expired')}</option>
-              <option value="DAMAGED">{t('dispensation.damaged')}</option>
-              <option value="RETURN">{t('dispensation.return')}</option>
+              <option value="DISPOSE">{t('dispensation.dispose')}</option>
             </select>
           </div>
           
@@ -300,7 +275,7 @@ export default function DispensationTrackingPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-xs">
                     {t('dispensation.notes')}
                   </th>
-                  {canUndo && (
+                  {canDelete && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {t('dispensation.actions')}
                     </th>
@@ -336,23 +311,23 @@ export default function DispensationTrackingPage() {
                       {log.notes || '-'}
                     </div>
                   </td>
-                  {canUndo && (
+                  {canDelete && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
-                        onClick={() => handleUndoLog(log)}
-                        disabled={undoLogMutation.isPending || !canUndoItem(log)}
+                        onClick={() => handleDeleteLog(log)}
+                        disabled={deleteLogMutation.isPending || !canDeleteItem(log)}
                         className={`${
-                          canUndoItem(log) 
-                            ? 'text-blue-600 hover:text-blue-900' 
+                          canDeleteItem(log) 
+                            ? 'text-red-600 hover:text-red-900' 
                             : 'text-gray-400 cursor-not-allowed'
                         } disabled:opacity-50 disabled:cursor-not-allowed`}
                         title={
-                          canUndoItem(log) 
-                            ? t('dispensation.undoTooltip')
-                            : t('dispensation.cannotUndo')
+                          canDeleteItem(log) 
+                            ? t('dispensation.deleteTooltip')
+                            : t('dispensation.cannotDelete')
                         }
                       >
-                        {t('dispensation.undo')}
+                        {t('dispensation.delete')}
                       </button>
                     </td>
                   )}

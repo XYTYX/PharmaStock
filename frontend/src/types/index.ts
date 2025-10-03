@@ -120,7 +120,7 @@ export interface InventoryLog {
   id: string;
   productId: string;
   userId: string;
-  type: 'PURCHASE' | 'DISPENSATION' | 'ADJUSTMENT' | 'TRANSFER' | 'EXPIRED' | 'DAMAGED' | 'RETURN' | 'DISPOSE';
+  type: 'PURCHASE' | 'DISPENSATION' | 'ADJUSTMENT' | 'DISPOSE';
   quantity: number;
   previousStock: number;
   newStock: number;
