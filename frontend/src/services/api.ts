@@ -2,7 +2,7 @@ import axios from 'axios';
 import { LoginRequest, LoginResponse, User } from '../types';
 
 const API_BASE_URL = (import.meta as any).env.MODE === 'production' 
-  ? ((import.meta as any).env.VITE_API_URL || 'http://new-sight.local')
+  ? ((import.meta as any).env.VITE_API_URL || 'http://new-sight.local/api')
   : 'http://localhost:3000';
 
 // Debug logging
