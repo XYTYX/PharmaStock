@@ -5,17 +5,34 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuthStore } from '../store/authStore';
 import { generateCountingWorksheets } from '../services/pdfGenerator';
 
+interface MedicineGroup {
+  name: string;
+  forms: Array<{
+    form: string;
+    expiryDates: Array<{
+      expiryDate: string;
+      currentStock: number;
+      itemId: string;
+    }>;
+  }>;
+  totalStock: number;
+  lastMonthDispensations: number;
+  forecastMonths: number | null;
+}
+
 export default function CurrentStockPage() {
   const { t } = useLanguage();
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState({
     search: '',
-    sortBy: 'item.name',
-    sortOrder: 'asc'
+    sortBy: 'name' as 'name' | 'expiryDate',
+    sortOrder: 'asc' as 'asc' | 'desc'
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
+  const [selectedMedicineGroup, setSelectedMedicineGroup] = useState<MedicineGroup | null>(null);
 
   // Check if current user is admin
   const isAdmin = user?.role === 'ADMIN';
@@ -77,11 +94,20 @@ export default function CurrentStockPage() {
     }
   });
 
-
   // Admin functions
-  const handleEdit = (item: any) => {
-    setEditingItem(item);
-    setIsModalOpen(true);
+  const handleEdit = (medicineGroup: MedicineGroup) => {
+    setSelectedMedicineGroup(medicineGroup);
+    setIsSelectionModalOpen(true);
+  };
+
+  const handleSelectItemToEdit = (itemId: string) => {
+    // Find the specific item from allInventory
+    const item = allInventory.find((inv: any) => inv.item.id === itemId);
+    if (item) {
+      setEditingItem(item);
+      setIsSelectionModalOpen(false);
+      setIsModalOpen(true);
+    }
   };
 
   const handleCreate = () => {
@@ -107,7 +133,7 @@ export default function CurrentStockPage() {
 
   const handleStartCount = () => {
     // Filter active medicines with stock > 0
-    const activeMedicines = inventory.filter((item: any) => 
+    const activeMedicines = allInventory.filter((item: any) => 
       item.item?.isActive && item.currentStock > 0
     );
 
@@ -138,62 +164,134 @@ export default function CurrentStockPage() {
   // Fetch all inventory data once
   const { data: stockData, isLoading, error } = useQuery({
     queryKey: ['current-stock-all'],
-    queryFn: () => inventoryApi.getCurrentStock({ limit: 1000 }) // Get all items
+    queryFn: () => inventoryApi.getCurrentStock({ limit: 1000 }), // Get all items
+    refetchOnWindowFocus: true, // Refresh when page regains focus
+    staleTime: 0 // Always consider data stale to ensure fresh data
+  });
+
+  // Fetch dispensation data for the last month
+  const { data: dispensationData } = useQuery({
+    queryKey: ['dispensations-last-month'],
+    queryFn: () => {
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+      return inventoryApi.getInventoryLogs({
+        reason: 'DISPENSATION',
+        startDate: oneMonthAgo.toISOString(),
+        limit: 1000
+      });
+    },
+    refetchOnWindowFocus: true, // Refresh when page regains focus
+    staleTime: 0 // Always consider data stale to ensure fresh data
   });
 
   const allInventory = stockData?.inventory || [];
+  const dispensations = dispensationData?.logs || [];
+
+  // Group medicines by name and calculate dispensation data
+  const medicineGroups = useMemo(() => {
+    const groups = new Map<string, MedicineGroup>();
+
+    // Process inventory data
+    allInventory.forEach((item: any) => {
+      if (!item.item?.isActive) return;
+
+      const medicineName = item.item.name;
+      const form = item.item.form || 'TABLET';
+      const expiryDate = item.item.expiryDate || 'No Expiry';
+      const currentStock = item.currentStock;
+      const itemId = item.item.id;
+
+      if (!groups.has(medicineName)) {
+        groups.set(medicineName, {
+          name: medicineName,
+          forms: [],
+          totalStock: 0,
+          lastMonthDispensations: 0,
+          forecastMonths: null
+        });
+      }
+
+      const group = groups.get(medicineName)!;
+      group.totalStock += currentStock;
+
+      // Find or create form
+      let formEntry = group.forms.find(f => f.form === form);
+      if (!formEntry) {
+        formEntry = { form, expiryDates: [] };
+        group.forms.push(formEntry);
+      }
+
+      // Add expiry date entry
+      formEntry.expiryDates.push({
+        expiryDate,
+        currentStock,
+        itemId
+      });
+    });
+
+    // Process dispensation data
+    dispensations.forEach((dispensation: any) => {
+      const medicineName = dispensation.item?.name;
+      if (!medicineName || !groups.has(medicineName)) return;
+
+      const group = groups.get(medicineName)!;
+      group.lastMonthDispensations += Math.abs(dispensation.totalAmount);
+    });
+
+    // Calculate forecast for each medicine
+    groups.forEach((group) => {
+      if (group.lastMonthDispensations > 0 && group.totalStock > 0) {
+        // Calculate months until stock runs out based on last month's usage
+        group.forecastMonths = Math.floor(group.totalStock / group.lastMonthDispensations);
+      }
+    });
+
+    return Array.from(groups.values());
+  }, [allInventory, dispensations]);
 
   // Client-side filtering and sorting
-  const inventory = useMemo(() => {
-    let filtered = allInventory;
+  const filteredMedicineGroups = useMemo(() => {
+    let filtered = medicineGroups;
 
     // Filter by search term
     if (filter.search) {
-      filtered = filtered.filter((item: any) => 
-        item.item?.name?.toLowerCase().includes(filter.search.toLowerCase())
+      filtered = filtered.filter(group => 
+        group.name.toLowerCase().includes(filter.search.toLowerCase())
       );
     }
 
     // Sort the results
-    filtered.sort((a: any, b: any) => {
+    filtered.sort((a, b) => {
       let aValue, bValue;
       
-      if (filter.sortBy === 'item.name') {
-        aValue = a.item?.name || '';
-        bValue = b.item?.name || '';
-      } else if (filter.sortBy === 'currentStock') {
-        aValue = a.currentStock;
-        bValue = b.currentStock;
-      } else if (filter.sortBy === 'item.form') {
-        aValue = a.item?.form ? translateForm(a.item.form) : '';
-        bValue = b.item?.form ? translateForm(b.item.form) : '';
-      } else if (filter.sortBy === 'item.expiryDate') {
-        aValue = parseExpiryDate(a.item?.expiryDate || '');
-        bValue = parseExpiryDate(b.item?.expiryDate || '');
+      if (filter.sortBy === 'name') {
+        aValue = a.name.toLowerCase();
+        bValue = b.name.toLowerCase();
+      } else if (filter.sortBy === 'expiryDate') {
+        // Sort by earliest expiry date
+        const aEarliestExpiry = Math.min(...a.forms.flatMap(f => 
+          f.expiryDates.map(ed => parseExpiryDate(ed.expiryDate).getTime())
+        ));
+        const bEarliestExpiry = Math.min(...b.forms.flatMap(f => 
+          f.expiryDates.map(ed => parseExpiryDate(ed.expiryDate).getTime())
+        ));
+        aValue = aEarliestExpiry;
+        bValue = bEarliestExpiry;
       } else {
-        aValue = a.item?.name || '';
-        bValue = b.item?.name || '';
+        aValue = a.name.toLowerCase();
+        bValue = b.name.toLowerCase();
       }
 
-      if (filter.sortBy === 'item.expiryDate') {
-        // For dates, we need to compare Date objects
-        if (filter.sortOrder === 'asc') {
-          return aValue.getTime() - bValue.getTime();
-        } else {
-          return bValue.getTime() - aValue.getTime();
-        }
+      if (filter.sortOrder === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
       } else {
-        // For other values, use string/number comparison
-        if (filter.sortOrder === 'asc') {
-          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-        } else {
-          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-        }
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
       }
     });
 
     return filtered;
-  }, [allInventory, filter.search, filter.sortBy, filter.sortOrder]);
+  }, [medicineGroups, filter.search, filter.sortBy, filter.sortOrder]);
 
   if (isLoading) {
     return (
@@ -242,28 +340,6 @@ export default function CurrentStockPage() {
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <div className="text-2xl font-bold text-gray-900">
-            {inventory.length}
-          </div>
-          <div className="text-sm text-gray-500">{t('inventory.totalItems')}</div>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <div className="text-2xl font-bold text-blue-600">
-            {inventory.reduce((sum: number, item: any) => sum + item.currentStock, 0)}
-          </div>
-          <div className="text-sm text-gray-500">{t('inventory.totalStock')}</div>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <div className="text-2xl font-bold text-green-600">
-            {inventory.filter((item: any) => item.currentStock > 0).length}
-          </div>
-          <div className="text-sm text-gray-500">{t('inventory.inStock')}</div>
-        </div>
-      </div>
-
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -286,13 +362,11 @@ export default function CurrentStockPage() {
             </label>
             <select
               value={filter.sortBy}
-              onChange={(e) => setFilter({ ...filter, sortBy: e.target.value })}
+              onChange={(e) => setFilter({ ...filter, sortBy: e.target.value as 'name' | 'expiryDate' })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="item.name">{t('inventory.item')}</option>
-              <option value="currentStock">{t('inventory.currentStock')}</option>
-              <option value="item.form">{t('inventory.form')}</option>
-              <option value="item.expiryDate">{t('inventory.expiryDate')}</option>
+              <option value="name">{t('inventory.item')}</option>
+              <option value="expiryDate">{t('inventory.expiryDate')}</option>
             </select>
           </div>
           
@@ -302,7 +376,7 @@ export default function CurrentStockPage() {
             </label>
             <select
               value={filter.sortOrder}
-              onChange={(e) => setFilter({ ...filter, sortOrder: e.target.value })}
+              onChange={(e) => setFilter({ ...filter, sortOrder: e.target.value as 'asc' | 'desc' })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="asc">{t('inventory.ascending')}</option>
@@ -312,92 +386,39 @@ export default function CurrentStockPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('inventory.item')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('inventory.form')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('inventory.expiryDate')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('inventory.currentStock')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('inventory.stockLevel')}
-                </th>
-                {isAdmin && (
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('inventory.modal.actions')}
-                  </th>
-                )}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {inventory.map((item: any) => {
-                const getStockLevel = (stock: number) => {
-                  if (stock === 0) return { text: t('inventory.outOfStock'), color: 'bg-red-100 text-red-800' };
-                  if (stock <= 10) return { text: t('inventory.lowStock'), color: 'bg-yellow-100 text-yellow-800' };
-                  return { text: t('inventory.inStock'), color: 'bg-green-100 text-green-800' };
-                };
-                
-                const stockLevel = getStockLevel(item.currentStock);
-                
-                return (
-                  <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {item.item?.name || 'Article supprimé'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {item.item?.form ? translateForm(item.item.form) : '-'}
-                    </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${
-                      isExpired(item.item?.expiryDate) 
-                        ? 'bg-red-100 text-red-600 font-medium' 
-                        : 'text-gray-900'
-                    }`}>
-                      {item.item?.expiryDate || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <span className="font-medium">{item.currentStock}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stockLevel.color}`}>
-                        {stockLevel.text}
-                      </span>
-                    </td>
-                    {isAdmin && (
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => handleEdit(item)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          {t('inventory.modal.editItem')}
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        
-        {inventory.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            {t('inventory.noStock')}
-          </div>
-        )}
+      {/* Medicine Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredMedicineGroups.map((group) => (
+          <MedicineCard
+            key={group.name}
+            group={group}
+            translateForm={translateForm}
+            isExpired={isExpired}
+            isAdmin={isAdmin}
+            onEdit={handleEdit}
+          />
+        ))}
       </div>
+
+      {filteredMedicineGroups.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          {t('inventory.noStock')}
+        </div>
+      )}
+
+      {/* Item Selection Modal */}
+      {isSelectionModalOpen && selectedMedicineGroup && (
+        <ItemSelectionModal
+          medicineGroup={selectedMedicineGroup}
+          translateForm={translateForm}
+          isExpired={isExpired}
+          onSelectItem={handleSelectItemToEdit}
+          onClose={() => {
+            setIsSelectionModalOpen(false);
+            setSelectedMedicineGroup(null);
+          }}
+        />
+      )}
 
       {/* Item Modal */}
       {isModalOpen && (
@@ -411,6 +432,177 @@ export default function CurrentStockPage() {
           isLoading={createItemMutation.isPending || updateItemMutation.isPending}
         />
       )}
+    </div>
+  );
+}
+
+// Medicine Card Component
+interface MedicineCardProps {
+  group: MedicineGroup;
+  translateForm: (form: string) => string;
+  isExpired: (dateStr: string) => boolean;
+  isAdmin: boolean;
+  onEdit: (item: any) => void;
+}
+
+function MedicineCard({ group, translateForm, isExpired, isAdmin, onEdit }: MedicineCardProps) {
+  const { t } = useLanguage();
+
+  const getStockLevel = (stock: number, forecastMonths: number | null) => {
+    if (stock === 0) return { text: t('inventory.outOfStock'), color: 'bg-red-100 text-red-800' };
+    if (forecastMonths === null) return { text: t('inventory.inStock'), color: 'bg-green-100 text-green-800' };
+    if (forecastMonths <= 3) return { text: 'Critical Stock', color: 'bg-red-100 text-red-800' };
+    if (forecastMonths <= 6) return { text: t('inventory.lowStock'), color: 'bg-yellow-100 text-yellow-800' };
+    return { text: t('inventory.inStock'), color: 'bg-green-100 text-green-800' };
+  };
+
+  const stockLevel = getStockLevel(group.totalStock, group.forecastMonths);
+
+  return (
+    <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+      {/* Header */}
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">{group.name}</h3>
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stockLevel.color}`}>
+              {stockLevel.text}
+            </span>
+            <span className="text-sm text-gray-600">
+              Total: {group.totalStock}
+            </span>
+          </div>
+        </div>
+        {isAdmin && (
+          <button
+            onClick={() => onEdit(group)}
+            className="text-blue-600 hover:text-blue-900 text-sm"
+          >
+            {t('inventory.modal.editItem')}
+          </button>
+        )}
+      </div>
+
+      {/* Forms and Expiry Dates */}
+      <div className="space-y-3 mb-4">
+        {group.forms.map((formEntry, formIndex) => (
+          <div key={formIndex} className="border-l-2 border-blue-200 pl-3">
+            <div className="font-medium text-sm text-gray-700 mb-2">
+              {translateForm(formEntry.form)}
+            </div>
+            <div className="space-y-1">
+              {formEntry.expiryDates.map((expiryEntry, expiryIndex) => (
+                <div key={expiryIndex} className="flex justify-between items-center text-sm">
+                  <span className={`${
+                    isExpired(expiryEntry.expiryDate) 
+                      ? 'text-red-600 font-medium' 
+                      : 'text-gray-600'
+                  }`}>
+                    {expiryEntry.expiryDate}
+                  </span>
+                  <span className="font-medium text-gray-900">
+                    {expiryEntry.currentStock}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Dispensation Stats */}
+      <div className="border-t pt-3 space-y-2">
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-600">Last Month Dispensed:</span>
+          <span className="font-medium text-gray-900">{group.lastMonthDispensations}</span>
+        </div>
+        
+        {group.forecastMonths !== null && (
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Forecast:</span>
+            <span className={`font-medium ${
+              group.forecastMonths <= 3 ? 'text-red-600' : 
+              group.forecastMonths <= 6 ? 'text-yellow-600' : 
+              'text-green-600'
+            }`}>
+              {group.forecastMonths} {group.forecastMonths === 1 ? 'month' : 'months'}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Item Selection Modal Component
+interface ItemSelectionModalProps {
+  medicineGroup: MedicineGroup;
+  translateForm: (form: string) => string;
+  isExpired: (dateStr: string) => boolean;
+  onSelectItem: (itemId: string) => void;
+  onClose: () => void;
+}
+
+function ItemSelectionModal({ medicineGroup, translateForm, isExpired, onSelectItem, onClose }: ItemSelectionModalProps) {
+
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+        <div className="mt-3">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Select Item to Edit - {medicineGroup.name}
+          </h3>
+          
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            {medicineGroup.forms.map((formEntry, formIndex) => (
+              <div key={formIndex} className="border border-gray-200 rounded-lg p-4">
+                <div className="font-medium text-gray-700 mb-3">
+                  {translateForm(formEntry.form)}
+                </div>
+                <div className="space-y-2">
+                  {formEntry.expiryDates.map((expiryEntry, expiryIndex) => (
+                    <button
+                      key={expiryIndex}
+                      onClick={() => onSelectItem(expiryEntry.itemId)}
+                      className="w-full text-left p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300 transition-colors"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <span className={`font-medium ${
+                            isExpired(expiryEntry.expiryDate) 
+                              ? 'text-red-600' 
+                              : 'text-gray-900'
+                          }`}>
+                            {expiryEntry.expiryDate}
+                          </span>
+                          {isExpired(expiryEntry.expiryDate) && (
+                            <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
+                              Expired
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Stock: <span className="font-medium">{expiryEntry.currentStock}</span>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4 mt-6 border-t">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
