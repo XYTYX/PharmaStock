@@ -274,7 +274,8 @@ export default function DispensationsPage() {
       'TABLET': t('inventory.form.tablet'),
       'EYE_DROPS': t('inventory.form.eyeDrops'),
       'GEL': t('inventory.form.gel'),
-      'POWDER': t('inventory.form.powder')
+      'POWDER': t('inventory.form.powder'),
+      'CREAM': t('inventory.form.cream')
     };
     return formMap[form] || form;
   };
