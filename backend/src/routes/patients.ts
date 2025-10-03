@@ -14,6 +14,11 @@ const formatName = (name: string): string => {
     .join(' ');
 };
 
+// Utility function to format patient IDs (trim whitespace and capitalize all letters)
+const formatPatientId = (patientId: string): string => {
+  return patientId.trim().toUpperCase();
+};
+
 const createPatientSchema = z.object({
   patientName: z.string().min(1, 'Patient name is required'),
   patientId: z.string().min(1, 'Patient ID is required')
@@ -125,22 +130,23 @@ router.post('/', async (req, res) => {
   try {
     const { patientName, patientId } = createPatientSchema.parse(req.body);
     
+    // Format the patient ID and name
+    const formattedPatientId = formatPatientId(patientId);
+    const formattedPatientName = formatName(patientName);
+    
     // Check if patient with this ID already exists
     const existingPatient = await prisma.patient.findFirst({
-      where: { patientId }
+      where: { patientId: formattedPatientId }
     });
 
     if (existingPatient) {
       return res.status(409).json({ error: 'Patient with this ID already exists' });
     }
 
-    // Format the patient name
-    const formattedPatientName = formatName(patientName);
-
     const patient = await prisma.patient.create({
       data: {
         patientName: formattedPatientName,
-        patientId
+        patientId: formattedPatientId
       }
     });
 
@@ -160,9 +166,12 @@ router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const updateData = updatePatientSchema.parse(req.body);
 
-    // Format patient name if provided
+    // Format patient name and ID if provided
     if (updateData.patientName) {
       updateData.patientName = formatName(updateData.patientName);
+    }
+    if (updateData.patientId) {
+      updateData.patientId = formatPatientId(updateData.patientId);
     }
 
     // Check if patient exists
@@ -240,17 +249,51 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// Search patients by ID (for autocomplete)
+router.get('/search', async (req, res) => {
+  try {
+    const { q, limit = '10' } = req.query;
+    
+    if (!q || typeof q !== 'string') {
+      return res.json({ patients: [] });
+    }
+
+    // Don't format the search query here - let the database handle case-insensitive search
+    const searchQuery = q.trim();
+    const limitNum = parseInt(limit as string);
+
+    console.log('Searching for patients with query:', searchQuery);
+
+    // Use raw SQL for case-insensitive search in SQLite
+    const patients = await prisma.$queryRaw`
+      SELECT id, "patientName", "patientId" 
+      FROM patients 
+      WHERE UPPER("patientId") LIKE UPPER(${`%${searchQuery}%`})
+      ORDER BY "patientId" ASC
+      LIMIT ${limitNum}
+    `;
+
+    console.log('Found patients:', patients);
+
+    res.json({ patients });
+  } catch (error) {
+    console.error('Error searching patients:', error);
+    res.status(500).json({ error: 'Failed to search patients' });
+  }
+});
+
 // Find or create patient (utility endpoint for dispensations)
 router.post('/find-or-create', async (req, res) => {
   try {
     const { patientName, patientId } = createPatientSchema.parse(req.body);
     
-    // Format the patient name
+    // Format the patient name and ID
     const formattedPatientName = formatName(patientName);
+    const formattedPatientId = formatPatientId(patientId);
 
     // Try to find existing patient by patientId
     let patient = await prisma.patient.findFirst({
-      where: { patientId }
+      where: { patientId: formattedPatientId }
     });
 
     if (patient) {
@@ -266,7 +309,7 @@ router.post('/find-or-create', async (req, res) => {
       patient = await prisma.patient.create({
         data: {
           patientName: formattedPatientName,
-          patientId
+          patientId: formattedPatientId
         }
       });
     }

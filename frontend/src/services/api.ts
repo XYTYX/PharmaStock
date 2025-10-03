@@ -177,6 +177,13 @@ export const inventoryApi = {
     const response = await api.post('/patients/find-or-create', data);
     return response.data;
   },
+
+  searchPatients: async (query: string, limit?: number) => {
+    const response = await api.get('/patients/search', { 
+      params: { q: query, limit: limit?.toString() } 
+    });
+    return response.data;
+  },
 };
 
 // Users API

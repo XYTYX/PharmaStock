@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -37,6 +37,11 @@ const formatName = (name: string): string => {
     .join(' ');
 };
 
+// Utility function to format patient IDs (trim whitespace and capitalize all letters)
+const formatPatientId = (patientId: string): string => {
+  return patientId.trim().toUpperCase();
+};
+
 export default function DispensationsPage() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
@@ -71,11 +76,71 @@ export default function DispensationsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [stagedMedications, setStagedMedications] = useState<StagedMedication[]>([]);
   const [patientInfo, setPatientInfo] = useState({
-    firstName: '',
-    lastName: '',
-    patientNumber: ''
+    patientName: '',
+    patientId: ''
   });
+  const [patientSearchResults, setPatientSearchResults] = useState<any[]>([]);
+  const [showPatientDropdown, setShowPatientDropdown] = useState(false);
+  const [isSearchingPatients, setIsSearchingPatients] = useState(false);
   const [isDispensing, setIsDispensing] = useState(false);
+
+  // Patient search functionality
+  const searchPatients = useCallback(async (query: string) => {
+    if (query.length < 2) {
+      setPatientSearchResults([]);
+      return;
+    }
+
+    console.log('Frontend searching for patients with query:', query);
+    setIsSearchingPatients(true);
+    try {
+      const response = await inventoryApi.searchPatients(query, 10);
+      console.log('Frontend received patients:', response.patients);
+      setPatientSearchResults(response.patients || []);
+    } catch (error) {
+      console.error('Error searching patients:', error);
+      setPatientSearchResults([]);
+    } finally {
+      setIsSearchingPatients(false);
+    }
+  }, []);
+
+  // Debounced patient search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (patientInfo.patientId) {
+        searchPatients(patientInfo.patientId);
+      } else {
+        setPatientSearchResults([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [patientInfo.patientId, searchPatients]);
+
+  // Handle patient selection from dropdown
+  const handlePatientSelect = (patient: any) => {
+    setPatientInfo({
+      patientName: patient.patientName,
+      patientId: patient.patientId
+    });
+    setShowPatientDropdown(false);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.patient-dropdown-container')) {
+        setShowPatientDropdown(false);
+      }
+    };
+
+    if (showPatientDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showPatientDropdown]);
 
   // Fetch current stock data
   const { data: stockData, isLoading, error } = useQuery({
@@ -352,11 +417,9 @@ export default function DispensationsPage() {
     try {
       // Handle patient creation/retrieval if patient info is provided
       let patientRecord = null;
-      if (patientInfo.firstName.trim() || patientInfo.lastName.trim() || patientInfo.patientNumber.trim()) {
-        const firstName = formatName(patientInfo.firstName);
-        const lastName = formatName(patientInfo.lastName);
-        const patientName = `${firstName} ${lastName}`.trim();
-        const patientId = patientInfo.patientNumber.trim();
+      if (patientInfo.patientName.trim() || patientInfo.patientId.trim()) {
+        const patientName = formatName(patientInfo.patientName);
+        const patientId = formatPatientId(patientInfo.patientId);
 
         if (patientName && patientId) {
           // Call the patient endpoint to find or create the patient
@@ -371,15 +434,10 @@ export default function DispensationsPage() {
       // Process each staged medication
       for (const medication of stagedMedications) {
         // Create patient name if any patient info is provided
-        let patientName = '';
-        if (patientInfo.firstName.trim() || patientInfo.lastName.trim()) {
-          const firstName = formatName(patientInfo.firstName);
-          const lastName = formatName(patientInfo.lastName);
-          patientName = `${firstName} ${lastName}`.trim();
-        }
+        const patientName = patientInfo.patientName.trim() ? formatName(patientInfo.patientName) : '';
 
         // Get patient ID if provided
-        const patientId = patientInfo.patientNumber.trim() || undefined;
+        const patientId = patientInfo.patientId.trim() ? formatPatientId(patientInfo.patientId) : undefined;
 
         // Create notes with patient information if provided
         let notes = `Dispensed: ${medication.name} (${translateForm(medication.form)}) - ${medication.expiryDate}`;
@@ -399,8 +457,10 @@ export default function DispensationsPage() {
 
       // Clear staging area and refresh data
       setStagedMedications([]);
-      setPatientInfo({ firstName: '', lastName: '', patientNumber: '' });
+      setPatientInfo({ patientName: '', patientId: '' });
       setShowPatientModal(false);
+      setPatientSearchResults([]);
+      setShowPatientDropdown(false);
       queryClient.invalidateQueries({ queryKey: ['current-stock-all'] });
       queryClient.invalidateQueries({ queryKey: ['recent-dispensations'] });
       
@@ -788,45 +848,55 @@ export default function DispensationsPage() {
             </p>
             
             <div className="space-y-4">
-              {/* Patient First Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('dispensations.patientFirstName')}
-                </label>
-                <input
-                  type="text"
-                  value={patientInfo.firstName}
-                  onChange={(e) => setPatientInfo(prev => ({ ...prev, firstName: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={t('dispensations.patientFirstName')}
-                />
-              </div>
-
-              {/* Patient Last Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('dispensations.patientLastName')}
-                </label>
-                <input
-                  type="text"
-                  value={patientInfo.lastName}
-                  onChange={(e) => setPatientInfo(prev => ({ ...prev, lastName: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={t('dispensations.patientLastName')}
-                />
-              </div>
-
-              {/* Patient Number */}
-              <div>
+              {/* Patient ID with Search Dropdown */}
+              <div className="relative patient-dropdown-container">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {t('dispensations.patientNumber')}
                 </label>
                 <input
                   type="text"
-                  value={patientInfo.patientNumber}
-                  onChange={(e) => setPatientInfo(prev => ({ ...prev, patientNumber: e.target.value }))}
+                  value={patientInfo.patientId}
+                  onChange={(e) => {
+                    setPatientInfo(prev => ({ ...prev, patientId: e.target.value }));
+                    setShowPatientDropdown(true);
+                  }}
+                  onFocus={() => setShowPatientDropdown(true)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={t('dispensations.patientNumber')}
+                  placeholder="Enter patient ID..."
+                />
+                
+                {/* Patient Search Dropdown */}
+                {showPatientDropdown && patientSearchResults.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {isSearchingPatients ? (
+                      <div className="px-3 py-2 text-sm text-gray-500">Searching...</div>
+                    ) : (
+                      patientSearchResults.map((patient) => (
+                        <button
+                          key={patient.id}
+                          onClick={() => handlePatientSelect(patient)}
+                          className="w-full text-left px-3 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                        >
+                          <div className="font-medium text-gray-900">{patient.patientName}</div>
+                          <div className="text-sm text-gray-500">{patient.patientId}</div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Patient Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Patient Name
+                </label>
+                <input
+                  type="text"
+                  value={patientInfo.patientName}
+                  onChange={(e) => setPatientInfo(prev => ({ ...prev, patientName: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter patient name..."
                 />
               </div>
             </div>
