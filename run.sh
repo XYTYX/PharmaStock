@@ -205,9 +205,9 @@ start_backend() {
     if command -v pm2 &> /dev/null; then
         log "Starting backend with PM2..."
         if [ "$ENVIRONMENT" = "production" ]; then
-            pm2 start "$SCRIPT_DIR/ecosystem.config.js" --only pharmastock-backend --env production
+            pm2 start "$SCRIPT_DIR/ecosystem.config.js" --only pharmastock-backend --env production --update-env
         else
-            pm2 start "$SCRIPT_DIR/ecosystem.config.js" --only pharmastock-backend
+            pm2 start "$SCRIPT_DIR/ecosystem.config.js" --only pharmastock-backend --update-env
         fi
         log "Backend started with PM2"
     else
@@ -223,9 +223,9 @@ start_frontend() {
     if command -v pm2 &> /dev/null; then
         log "Starting frontend with PM2..."
         if [ "$ENVIRONMENT" = "production" ]; then
-            pm2 start "$SCRIPT_DIR/ecosystem.config.js" --only pharmastock-frontend --env production
+            pm2 start "$SCRIPT_DIR/ecosystem.config.js" --only pharmastock-frontend --env production --update-env
         else
-            pm2 start "$SCRIPT_DIR/ecosystem.config.js" --only pharmastock-frontend
+            pm2 start "$SCRIPT_DIR/ecosystem.config.js" --only pharmastock-frontend --update-env
         fi
         log "Frontend started with PM2"
     else

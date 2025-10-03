@@ -24,10 +24,10 @@ console.log('Current working directory:', process.cwd());
 // Test Prisma connection to the database
 prisma.$connect()
   .then(() => {
-    console.log('✅ Successfully connected to the database.');
+    console.log('✅ Successfully connected to the database at .', process.env.DATABASE_URL);
   })
   .catch((err) => {
-    console.error('❌ Failed to connect to the database:', err);
+    console.error('❌ Failed to connect to the database at', process.env.DATABASE_URL, ':', err);
     process.exit(1);
   });
 
@@ -45,19 +45,6 @@ const corsOptions = {
 };
 
 console.log('CORS Configuration:', corsOptions);
-
-// Debug CORS middleware - MUST be before cors() middleware
-app.use((req, res, next) => {
-  if (req.method === 'OPTIONS') {
-    console.log('🔍 CORS Preflight Request Detected:');
-    console.log('  Origin:', req.headers.origin);
-    console.log('  Request Method:', req.headers['access-control-request-method']);
-    console.log('  Request Headers:', req.headers['access-control-request-headers']);
-    console.log('  Allowed Origins:', corsOptions.origin);
-    console.log('  Origin Allowed:', corsOptions.origin.includes(req.headers.origin || ''));
-  }
-  next();
-});
 
 // In your backend, add this middleware
 app.use((req, res, next) => {
@@ -78,14 +65,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Debug middleware to log ALL requests
-app.use((req, res, next) => {
-  console.log(`📥 Incoming request: ${req.method} ${req.url}`);
-  console.log('  Origin:', req.headers.origin);
-  console.log('  User-Agent:', req.headers['user-agent']);
-  console.log('  Headers:', JSON.stringify(req.headers, null, 2));
-  next();
-});
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
