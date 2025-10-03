@@ -480,7 +480,7 @@ function MedicineCard({ group, translateForm, isExpired, canEdit, onEdit }: Medi
   const { t } = useLanguage();
 
   const getStockLevel = (stock: number, forecastMonths: number | null) => {
-    if (stock === 0) return { text: t('inventory.outOfStock'), color: 'bg-red-100 text-red-800' };
+    if (stock <= 0) return { text: t('inventory.outOfStock'), color: 'bg-red-100 text-red-800' };
     if (forecastMonths === null) return { text: t('inventory.inStock'), color: 'bg-green-100 text-green-800' };
     if (forecastMonths <= 3) return { text: 'Critical Stock', color: 'bg-red-100 text-red-800' };
     if (forecastMonths <= 6) return { text: t('inventory.lowStock'), color: 'bg-yellow-100 text-yellow-800' };
