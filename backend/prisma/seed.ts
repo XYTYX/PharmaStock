@@ -141,7 +141,7 @@ async function seedCSVData() {
               data: {
                 itemId: existingItem.id,
                 userId: joyceUser.id,
-                reason: 'ADJUSTMENT',
+                reason: 'PURCHASE',
                 totalAmount: stockDifference,
                 notes: `CSV import adjustment: ${stockDifference > 0 ? '+' : ''}${stockDifference} (${previousStock} → ${row.count})`
               }
@@ -160,7 +160,7 @@ async function seedCSVData() {
             data: {
               itemId: existingItem.id,
               userId: joyceUser.id,
-              reason: 'ADJUSTMENT',
+              reason: 'PURCHASE',
               totalAmount: row.count,
               notes: `CSV import: Initial stock of ${row.count}`
             }
@@ -193,7 +193,7 @@ async function seedCSVData() {
           data: {
             itemId: newItem.id,
             userId: joyceUser.id,
-            reason: 'ADJUSTMENT',
+            reason: 'PURCHASE',
             totalAmount: row.count,
             notes: `CSV import: New item with initial stock of ${row.count}`
           }

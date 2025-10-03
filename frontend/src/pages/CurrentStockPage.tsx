@@ -228,7 +228,7 @@ export default function CurrentStockPage() {
     staleTime: 0 // Always consider data stale to ensure fresh data
   });
 
-  // Fetch dispensation data for the last month
+  // Fetch dispensation and adjustment data for the last month
   const { data: dispensationData } = useQuery({
     queryKey: ['dispensations-last-month'],
     queryFn: () => {
@@ -244,8 +244,25 @@ export default function CurrentStockPage() {
     staleTime: 0 // Always consider data stale to ensure fresh data
   });
 
+  // Fetch adjustment data for the last month
+  const { data: adjustmentData } = useQuery({
+    queryKey: ['adjustments-last-month'],
+    queryFn: () => {
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+      return inventoryApi.getInventoryLogs({
+        reason: 'ADJUSTMENT',
+        startDate: oneMonthAgo.toISOString(),
+        limit: 1000
+      });
+    },
+    refetchOnWindowFocus: true, // Refresh when page regains focus
+    staleTime: 0 // Always consider data stale to ensure fresh data
+  });
+
   const allInventory = stockData?.inventory || [];
   const dispensations = dispensationData?.logs || [];
+  const adjustments = adjustmentData?.logs || [];
 
   // Group medicines by name and calculate dispensation data
   const medicineGroups = useMemo(() => {
@@ -300,6 +317,18 @@ export default function CurrentStockPage() {
       group.lastMonthDispensations += Math.abs(dispensation.totalAmount);
     });
 
+    // Process adjustment data (only negative adjustments that reduce stock)
+    adjustments.forEach((adjustment: any) => {
+      const medicineName = adjustment.item?.name;
+      if (!medicineName || !groups.has(medicineName)) return;
+
+      const group = groups.get(medicineName)!;
+      // Only include negative adjustments (stock reductions) in dispensation calculation
+      if (adjustment.totalAmount < 0) {
+        group.lastMonthDispensations += Math.abs(adjustment.totalAmount);
+      }
+    });
+
     // Calculate forecast for each medicine
     groups.forEach((group) => {
       if (group.lastMonthDispensations > 0 && group.totalStock > 0) {
@@ -309,7 +338,7 @@ export default function CurrentStockPage() {
     });
 
     return Array.from(groups.values());
-  }, [allInventory, dispensations, showInactive]);
+  }, [allInventory, dispensations, adjustments, showInactive]);
 
   // Client-side filtering and sorting
   const filteredMedicineGroups = useMemo(() => {
