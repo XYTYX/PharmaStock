@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 
 
 export default function DispensationTrackingPage() {
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
+
+  // All users can undo actions
+  const canUndo = true;
   
   // Calculate date range for last two months inclusive of today
   const getLastTwoMonthsDateRange = () => {
@@ -56,6 +60,54 @@ export default function DispensationTrackingPage() {
 
   const logs = inventoryLogs?.logs || [];
 
+  // Undo mutation
+  const undoLogMutation = useMutation({
+    mutationFn: async (log: any) => {
+      // Create a reversal adjustment
+      return inventoryApi.createInventoryAdjustment({
+        itemId: log.itemId,
+        quantity: -log.totalAmount, // Reverse the quantity
+        reason: 'ADJUSTMENT',
+        notes: t('dispensation.undoNote').replace('{originalDate}', new Date(log.createdAt).toLocaleDateString()).replace('{itemName}', log.item?.name || 'Unknown Item')
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventory-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['current-stock-all'] });
+      alert(t('dispensation.undoSuccess'));
+    },
+    onError: (error) => {
+      console.error('Error undoing dispensation:', error);
+      alert(t('dispensation.undoError'));
+    }
+  });
+
+  const handleUndoLog = (log: any) => {
+    const actionType = log.reason === 'DISPENSATION' ? t('dispensation.dispensation') : 
+                      log.reason === 'PURCHASE' ? t('dispensation.purchase') :
+                      log.reason === 'ADJUSTMENT' ? t('dispensation.adjustment') :
+                      log.reason === 'TRANSFER' ? t('dispensation.transfer') :
+                      log.reason === 'EXPIRED' ? t('dispensation.expired') :
+                      log.reason === 'DAMAGED' ? t('dispensation.damaged') :
+                      log.reason === 'RETURN' ? t('dispensation.return') :
+                      log.reason === 'DISPOSE' ? t('dispensation.dispose') :
+                      log.reason;
+    
+    const confirmMessage = log.totalAmount < 0 
+      ? t('dispensation.confirmUndoNegative')
+          .replace('{actionType}', actionType)
+          .replace('{quantity}', Math.abs(log.totalAmount).toString())
+          .replace('{itemName}', log.item?.name || 'Unknown Item')
+      : t('dispensation.confirmUndoPositive')
+          .replace('{actionType}', actionType)
+          .replace('{quantity}', Math.abs(log.totalAmount).toString())
+          .replace('{itemName}', log.item?.name || 'Unknown Item');
+
+    if (window.confirm(confirmMessage)) {
+      undoLogMutation.mutate(log);
+    }
+  };
+
   const getTypeBadge = (reason: string) => {
     const colors = {
       PURCHASE: 'bg-green-100 text-green-800',
@@ -64,7 +116,8 @@ export default function DispensationTrackingPage() {
       TRANSFER: 'bg-purple-100 text-purple-800',
       EXPIRED: 'bg-red-100 text-red-800',
       DAMAGED: 'bg-red-100 text-red-800',
-      RETURN: 'bg-gray-100 text-gray-800'
+      RETURN: 'bg-gray-100 text-gray-800',
+      DISPOSE: 'bg-orange-100 text-orange-800'
     };
 
     const getTypeLabel = (reason: string) => {
@@ -76,6 +129,7 @@ export default function DispensationTrackingPage() {
         case 'EXPIRED': return t('dispensation.expired');
         case 'DAMAGED': return t('dispensation.damaged');
         case 'RETURN': return t('dispensation.return');
+        case 'DISPOSE': return t('dispensation.dispose');
         default: return reason;
       }
     };
@@ -229,10 +283,15 @@ export default function DispensationTrackingPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {t('dispensation.user')}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('dispensation.notes')}
-                </th>
-              </tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-xs">
+                    {t('dispensation.notes')}
+                  </th>
+                  {canUndo && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('dispensation.actions')}
+                    </th>
+                  )}
+                </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {logs.map((log: any) => (
@@ -258,9 +317,23 @@ export default function DispensationTrackingPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {log.user?.firstName} {log.user?.lastName}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {log.notes || '-'}
+                  <td className="px-6 py-4 text-sm text-gray-500 max-w-xs">
+                    <div className="max-h-20 overflow-y-auto">
+                      {log.notes || '-'}
+                    </div>
                   </td>
+                  {canUndo && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
+                        onClick={() => handleUndoLog(log)}
+                        disabled={undoLogMutation.isPending}
+                        className="text-blue-600 hover:text-blue-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={t('dispensation.undoTooltip')}
+                      >
+                        {t('dispensation.undo')}
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

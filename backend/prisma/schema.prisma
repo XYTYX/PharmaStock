@@ -55,7 +55,7 @@ model InventoryLog {
   notes              String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
-  reason             String // PURCHASE, DISPENSATION, ADJUSTMENT, TRANSFER, EXPIRED, DAMAGED, RETURN
+  reason             String // PURCHASE, DISPENSATION, ADJUSTMENT, TRANSFER, EXPIRED, DAMAGED, RETURN, DISPOSE
   isItemActive       Boolean? // Indicates if the item was turned on or off during this log entry
 
   // Relations

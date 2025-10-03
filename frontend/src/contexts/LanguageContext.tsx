@@ -115,6 +115,8 @@ const translations = {
     'inventory.modal.cancel': 'Cancel',
     'inventory.modal.create': 'Create',
     'inventory.modal.update': 'Update',
+    'inventory.modal.dispose': 'Dispose',
+    'inventory.modal.disposeConfirm': 'Are you sure you want to dispose of all {quantity} units of {itemName}? This action cannot be undone.',
     'inventory.modal.saving': 'Saving...',
     'inventory.modal.adjustHint': 'To adjust stock quantities, please use the reconciliation feature.',
     
@@ -162,6 +164,15 @@ const translations = {
     'dispensation.expired': 'Expired',
     'dispensation.damaged': 'Damaged',
     'dispensation.return': 'Return',
+    'dispensation.dispose': 'Dispose',
+    'dispensation.actions': 'Actions',
+    'dispensation.undo': 'Undo',
+    'dispensation.undoTooltip': 'Undo this action',
+    'dispensation.undoSuccess': 'Action undone successfully',
+    'dispensation.undoError': 'Failed to undo action',
+    'dispensation.undoNote': 'Undo from {originalDate} - {itemName}',
+    'dispensation.confirmUndoNegative': 'Are you sure you want to undo this {actionType} of {quantity} {itemName}? This will add the quantity back to stock.',
+    'dispensation.confirmUndoPositive': 'Are you sure you want to undo this {actionType} of {quantity} {itemName}? This will remove the quantity from stock.',
     
     // Dispensations
     'dispensations.subtitle': 'Record medication dispensations quickly and efficiently',
@@ -397,6 +408,8 @@ const translations = {
     'inventory.modal.cancel': 'Annuler',
     'inventory.modal.create': 'Créer',
     'inventory.modal.update': 'Mettre à jour',
+    'inventory.modal.dispose': 'Éliminer',
+    'inventory.modal.disposeConfirm': 'Êtes-vous sûr de vouloir éliminer toutes les {quantity} unités de {itemName} ? Cette action ne peut pas être annulée.',
     'inventory.modal.saving': 'Enregistrement...',
     'inventory.modal.adjustHint': 'Pour ajuster les quantités de stock, veuillez utiliser la fonction de réconciliation.',
     
@@ -444,6 +457,15 @@ const translations = {
     'dispensation.expired': 'Expiré',
     'dispensation.damaged': 'Endommagé',
     'dispensation.return': 'Retour',
+    'dispensation.dispose': 'Éliminer',
+    'dispensation.actions': 'Actions',
+    'dispensation.undo': 'Annuler',
+    'dispensation.undoTooltip': 'Annuler cette action',
+    'dispensation.undoSuccess': 'Action annulée avec succès',
+    'dispensation.undoError': 'Échec de l\'annulation de l\'action',
+    'dispensation.undoNote': 'Annulation du {originalDate} - {itemName}',
+    'dispensation.confirmUndoNegative': 'Êtes-vous sûr de vouloir annuler cette {actionType} de {quantity} {itemName}? Cela ajoutera la quantité au stock.',
+    'dispensation.confirmUndoPositive': 'Êtes-vous sûr de vouloir annuler cette {actionType} de {quantity} {itemName}? Cela supprimera la quantité du stock.',
     
     // Dispensations
     'dispensations.subtitle': 'Enregistrer les dispensations de médicaments rapidement et efficacement',

@@ -145,12 +145,14 @@ export default function DashboardPage() {
                           log.reason === 'PURCHASE' ? 'bg-green-100' :
                           log.reason === 'DISPENSATION' ? 'bg-blue-100' :
                           log.reason === 'ADJUSTMENT' ? 'bg-yellow-100' :
+                          log.reason === 'DISPOSE' ? 'bg-orange-100' :
                           'bg-gray-100'
                         }`}>
                           <span className={`text-xs font-medium ${
                             log.reason === 'PURCHASE' ? 'text-green-800' :
                             log.reason === 'DISPENSATION' ? 'text-blue-800' :
                             log.reason === 'ADJUSTMENT' ? 'text-yellow-800' :
+                            log.reason === 'DISPOSE' ? 'text-orange-800' :
                             'text-gray-800'
                           }`}>
                             {log.reason?.charAt(0)}

@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useAuthStore } from '../store/authStore';
 import { generateCountingWorksheets } from '../services/pdfGenerator';
 
 interface MedicineGroup {
@@ -22,7 +21,6 @@ interface MedicineGroup {
 
 export default function CurrentStockPage() {
   const { t } = useLanguage();
-  const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState({
     search: '',
@@ -34,8 +32,8 @@ export default function CurrentStockPage() {
   const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
   const [selectedMedicineGroup, setSelectedMedicineGroup] = useState<MedicineGroup | null>(null);
 
-  // Check if current user is admin
-  const isAdmin = user?.role === 'ADMIN';
+  // All users can edit items
+  const canEdit = true;
 
   // Function to translate form values
   const translateForm = (form: string) => {
@@ -94,6 +92,25 @@ export default function CurrentStockPage() {
     }
   });
 
+  const disposeItemMutation = useMutation({
+    mutationFn: ({ itemId, quantity }: { itemId: string; quantity: number }) => 
+      inventoryApi.createInventoryAdjustment({
+        itemId,
+        quantity: -quantity, // Negative quantity to subtract
+        reason: 'DISPOSE',
+        notes: `Disposed of all ${quantity} units`
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['current-stock-all'] });
+      setIsModalOpen(false);
+      setEditingItem(null);
+    },
+    onError: (error) => {
+      console.error('Error disposing item:', error);
+      alert('Failed to dispose item. Please try again.');
+    }
+  });
+
   // Admin functions
   const handleEdit = (medicineGroup: MedicineGroup) => {
     setSelectedMedicineGroup(medicineGroup);
@@ -128,6 +145,19 @@ export default function CurrentStockPage() {
       };
       console.log('Creating item with data:', submitData);
       createItemMutation.mutate(submitData);
+    }
+  };
+
+  const handleDispose = (item: any) => {
+    const confirmMessage = t('inventory.modal.disposeConfirm')
+      .replace('{quantity}', item.currentStock.toString())
+      .replace('{itemName}', item.item.name);
+    
+    if (window.confirm(confirmMessage)) {
+      disposeItemMutation.mutate({
+        itemId: item.item.id,
+        quantity: item.currentStock
+      });
     }
   };
 
@@ -329,7 +359,7 @@ export default function CurrentStockPage() {
           >
             Start Count
           </button>
-          {isAdmin && (
+          {canEdit && (
             <button
               onClick={handleCreate}
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -394,7 +424,7 @@ export default function CurrentStockPage() {
             group={group}
             translateForm={translateForm}
             isExpired={isExpired}
-            isAdmin={isAdmin}
+            canEdit={canEdit}
             onEdit={handleEdit}
           />
         ))}
@@ -425,11 +455,12 @@ export default function CurrentStockPage() {
         <ItemModal
           item={editingItem}
           onSubmit={handleSubmit}
+          onDispose={handleDispose}
           onClose={() => {
             setIsModalOpen(false);
             setEditingItem(null);
           }}
-          isLoading={createItemMutation.isPending || updateItemMutation.isPending}
+          isLoading={createItemMutation.isPending || updateItemMutation.isPending || disposeItemMutation.isPending}
         />
       )}
     </div>
@@ -441,11 +472,11 @@ interface MedicineCardProps {
   group: MedicineGroup;
   translateForm: (form: string) => string;
   isExpired: (dateStr: string) => boolean;
-  isAdmin: boolean;
+  canEdit: boolean;
   onEdit: (item: any) => void;
 }
 
-function MedicineCard({ group, translateForm, isExpired, isAdmin, onEdit }: MedicineCardProps) {
+function MedicineCard({ group, translateForm, isExpired, canEdit, onEdit }: MedicineCardProps) {
   const { t } = useLanguage();
 
   const getStockLevel = (stock: number, forecastMonths: number | null) => {
@@ -473,7 +504,7 @@ function MedicineCard({ group, translateForm, isExpired, isAdmin, onEdit }: Medi
             </span>
           </div>
         </div>
-        {isAdmin && (
+        {canEdit && (
           <button
             onClick={() => onEdit(group)}
             className="text-blue-600 hover:text-blue-900 text-sm"
@@ -611,11 +642,12 @@ function ItemSelectionModal({ medicineGroup, translateForm, isExpired, onSelectI
 interface ItemModalProps {
   item: any;
   onSubmit: (data: any) => void;
+  onDispose: (item: any) => void;
   onClose: () => void;
   isLoading: boolean;
 }
 
-function ItemModal({ item, onSubmit, onClose, isLoading }: ItemModalProps) {
+function ItemModal({ item, onSubmit, onDispose, onClose, isLoading }: ItemModalProps) {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: item?.item?.name || '',
@@ -721,21 +753,36 @@ function ItemModal({ item, onSubmit, onClose, isLoading }: ItemModalProps) {
               </div>
             )}
 
-            <div className="flex justify-end space-x-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
-              >
-                {t('inventory.modal.cancel')}
-              </button>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-              >
-                {isLoading ? t('inventory.modal.saving') : (item ? t('inventory.modal.update') : t('inventory.modal.create'))}
-              </button>
+            <div className="flex justify-between pt-4">
+              {/* Dispose button - only show for existing items with stock */}
+              {item && item.currentStock > 0 && (
+                <button
+                  type="button"
+                  onClick={() => onDispose(item)}
+                  disabled={isLoading}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
+                >
+                  {t('inventory.modal.dispose')}
+                </button>
+              )}
+              
+              {/* Action buttons */}
+              <div className="flex space-x-3 ml-auto">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                >
+                  {t('inventory.modal.cancel')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                >
+                  {isLoading ? t('inventory.modal.saving') : (item ? t('inventory.modal.update') : t('inventory.modal.create'))}
+                </button>
+              </div>
             </div>
           </form>
         </div>

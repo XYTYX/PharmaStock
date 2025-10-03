@@ -8,7 +8,7 @@ const router = express.Router();
 const inventoryAdjustmentSchema = z.object({
   itemId: z.string().min(1, 'Item is required'),
   quantity: z.number().int(),
-  reason: z.enum(['PURCHASE', 'DISPENSATION', 'ADJUSTMENT', 'TRANSFER', 'EXPIRED', 'DAMAGED', 'RETURN']),
+  reason: z.enum(['PURCHASE', 'DISPENSATION', 'ADJUSTMENT', 'TRANSFER', 'EXPIRED', 'DAMAGED', 'RETURN', 'DISPOSE']),
   patientName: z.string().optional(),
   prescriptionNumber: z.string().optional(),
   notes: z.string().optional()
