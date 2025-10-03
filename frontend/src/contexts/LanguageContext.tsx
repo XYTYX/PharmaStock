@@ -210,6 +210,13 @@ const translations = {
     'dispensations.noStagedMedications': 'No medications staged for dispensation',
     'dispensations.noExpiryDatesForForm': 'No expiry dates available for this form',
     'dispensations.clickToDispense': 'Click to dispense',
+    'dispensations.patientInfo': 'Patient Information',
+    'dispensations.patientFirstName': 'Patient First Name',
+    'dispensations.patientLastName': 'Patient Last Name',
+    'dispensations.patientNumber': 'Patient Number',
+    'dispensations.patientInfoSubtitle': 'Enter patient information for this dispensation',
+    'dispensations.proceedWithDispensation': 'Proceed with Dispensation',
+    'dispensations.prescribedTo': 'prescribed to',
     
     // Common
     'common.optional': 'Optional',
@@ -510,6 +517,13 @@ const translations = {
     'dispensations.noStagedMedications': 'Aucun médicament mis en scène pour la dispensation',
     'dispensations.noExpiryDatesForForm': 'Aucune date d\'expiration disponible pour cette forme',
     'dispensations.clickToDispense': 'Cliquer pour dispenser',
+    'dispensations.patientInfo': 'Informations du Patient',
+    'dispensations.patientFirstName': 'Prénom du Patient',
+    'dispensations.patientLastName': 'Nom du Patient',
+    'dispensations.patientNumber': 'Numéro du Patient',
+    'dispensations.patientInfoSubtitle': 'Saisir les informations du patient pour cette dispensation',
+    'dispensations.proceedWithDispensation': 'Procéder à la Dispensation',
+    'dispensations.prescribedTo': 'prescrit à',
     
     // Common
     'common.optional': 'Optionnel',

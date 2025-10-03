@@ -58,8 +58,14 @@ export default function DispensationsPage() {
     notes: ''
   });
   const [showModal, setShowModal] = useState(false);
+  const [showPatientModal, setShowPatientModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [stagedMedications, setStagedMedications] = useState<StagedMedication[]>([]);
+  const [patientInfo, setPatientInfo] = useState({
+    firstName: '',
+    lastName: '',
+    patientNumber: ''
+  });
 
   // Fetch current stock data
   const { data: stockData, isLoading, error } = useQuery({
@@ -320,25 +326,46 @@ export default function DispensationsPage() {
     }
   };
 
-  const confirmDispensation = async () => {
+  const confirmDispensation = () => {
     if (stagedMedications.length === 0) {
       alert(t('dispensations.noStagedMedications'));
       return;
     }
 
+    // Show patient information modal
+    setShowPatientModal(true);
+  };
+
+  const proceedWithDispensation = async () => {
     try {
       // Process each staged medication
       for (const medication of stagedMedications) {
+        // Create patient name if any patient info is provided
+        let patientName = '';
+        if (patientInfo.firstName.trim() || patientInfo.lastName.trim()) {
+          const firstName = patientInfo.firstName.trim();
+          const lastName = patientInfo.lastName.trim();
+          patientName = `${firstName} ${lastName}`.trim();
+        }
+
+        // Create notes with patient information if provided
+        let notes = `Dispensed: ${medication.name} (${translateForm(medication.form)}) - ${medication.expiryDate}`;
+        if (patientName) {
+          notes = `${medication.quantity} x ${medication.name} ${t('dispensations.prescribedTo')} ${patientName}`;
+        }
+
         await inventoryApi.createInventoryAdjustment({
           itemId: medication.itemId,
           quantity: -medication.quantity, // Negative for dispensation
           reason: 'DISPENSATION',
-          notes: `Dispensed: ${medication.name} (${translateForm(medication.form)}) - ${medication.expiryDate}`
+          notes: notes
         });
       }
 
       // Clear staging area and refresh data
       setStagedMedications([]);
+      setPatientInfo({ firstName: '', lastName: '', patientNumber: '' });
+      setShowPatientModal(false);
       queryClient.invalidateQueries({ queryKey: ['current-stock-all'] });
       queryClient.invalidateQueries({ queryKey: ['recent-dispensations'] });
       
@@ -708,6 +735,80 @@ export default function DispensationsPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Patient Information Modal */}
+      {showPatientModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              {t('dispensations.patientInfo')}
+            </h2>
+            <p className="text-sm text-gray-600 mb-6">
+              {t('dispensations.patientInfoSubtitle')}
+            </p>
+            
+            <div className="space-y-4">
+              {/* Patient First Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('dispensations.patientFirstName')} ({t('common.optional')})
+                </label>
+                <input
+                  type="text"
+                  value={patientInfo.firstName}
+                  onChange={(e) => setPatientInfo(prev => ({ ...prev, firstName: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={t('dispensations.patientFirstName')}
+                />
+              </div>
+
+              {/* Patient Last Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('dispensations.patientLastName')} ({t('common.optional')})
+                </label>
+                <input
+                  type="text"
+                  value={patientInfo.lastName}
+                  onChange={(e) => setPatientInfo(prev => ({ ...prev, lastName: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={t('dispensations.patientLastName')}
+                />
+              </div>
+
+              {/* Patient Number */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('dispensations.patientNumber')} ({t('common.optional')})
+                </label>
+                <input
+                  type="text"
+                  value={patientInfo.patientNumber}
+                  onChange={(e) => setPatientInfo(prev => ({ ...prev, patientNumber: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={t('dispensations.patientNumber')}
+                />
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowPatientModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                onClick={proceedWithDispensation}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {t('dispensations.proceedWithDispensation')}
+              </button>
             </div>
           </div>
         </div>
