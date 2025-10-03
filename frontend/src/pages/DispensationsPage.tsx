@@ -66,6 +66,7 @@ export default function DispensationsPage() {
     lastName: '',
     patientNumber: ''
   });
+  const [isDispensing, setIsDispensing] = useState(false);
 
   // Fetch current stock data
   const { data: stockData, isLoading, error } = useQuery({
@@ -113,7 +114,7 @@ export default function DispensationsPage() {
     const medicationMap = new Map<string, Medication>();
     
     stockData.inventory.forEach((item: any) => {
-      if (!item.item || item.currentStock <= 0 || !item.item.isActive) return;
+      if (!item.item || !item.item.isActive) return;
       
       const name = item.item.name;
       if (!medicationMap.has(name)) {
@@ -160,7 +161,6 @@ export default function DispensationsPage() {
       if (inv.item?.name === medicationName && 
           inv.item?.form === form && 
           inv.item?.expiryDate && 
-          inv.currentStock > 0 &&
           inv.item?.isActive &&
           !isExpired(inv.item.expiryDate)) { // Filter out expired dates
         expiryDates.add(inv.item.expiryDate);
@@ -337,6 +337,9 @@ export default function DispensationsPage() {
   };
 
   const proceedWithDispensation = async () => {
+    if (isDispensing) return; // Prevent multiple clicks
+    
+    setIsDispensing(true);
     try {
       // Process each staged medication
       for (const medication of stagedMedications) {
@@ -373,6 +376,8 @@ export default function DispensationsPage() {
     } catch (error) {
       console.error('Dispensation error:', error);
       alert(t('dispensations.errorDispensing'));
+    } finally {
+      setIsDispensing(false);
     }
   };
 
@@ -613,15 +618,14 @@ export default function DispensationsPage() {
                       // Get all expiry dates (including expired) for display
                       const allExpiryDates = new Set<string>();
                       if (stockData?.inventory) {
-                        stockData.inventory.forEach((inv: any) => {
-                          if (inv.item?.name === selectedMedication.name && 
-                              inv.item?.form === dispensationForm.form && 
-                              inv.item?.expiryDate && 
-                              inv.currentStock > 0 &&
-                              inv.item?.isActive) {
-                            allExpiryDates.add(inv.item.expiryDate);
-                          }
-                        });
+                      stockData.inventory.forEach((inv: any) => {
+                        if (inv.item?.name === selectedMedication.name && 
+                            inv.item?.form === dispensationForm.form && 
+                            inv.item?.expiryDate && 
+                            inv.item?.isActive) {
+                          allExpiryDates.add(inv.item.expiryDate);
+                        }
+                      });
                       }
                       const sortedDates = Array.from(allExpiryDates).sort();
                       
@@ -805,9 +809,10 @@ export default function DispensationsPage() {
               </button>
               <button
                 onClick={proceedWithDispensation}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isDispensing}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
               >
-                {t('dispensations.proceedWithDispensation')}
+                {isDispensing ? t('common.saving') : t('dispensations.proceedWithDispensation')}
               </button>
             </div>
           </div>

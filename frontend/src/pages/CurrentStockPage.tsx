@@ -20,6 +20,22 @@ interface MedicineGroup {
   forecastMonths: number | null;
 }
 
+// Function to format expiry date input (MM-YYYY)
+const formatExpiryDateInput = (value: string) => {
+  // Remove all non-numeric characters
+  const numericValue = value.replace(/\D/g, '');
+  
+  // Limit to 6 digits (MMYYYY)
+  const limitedValue = numericValue.slice(0, 6);
+  
+  // Add dash after 2 digits if we have more than 2 digits
+  if (limitedValue.length > 2) {
+    return limitedValue.slice(0, 2) + '-' + limitedValue.slice(2);
+  }
+  
+  return limitedValue;
+};
+
 export default function CurrentStockPage() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
@@ -33,6 +49,7 @@ export default function CurrentStockPage() {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
   const [selectedMedicineGroup, setSelectedMedicineGroup] = useState<MedicineGroup | null>(null);
+  const [prePopulatedName, setPrePopulatedName] = useState<string>('');
 
   // All users can edit items
   const canEdit = true;
@@ -150,6 +167,21 @@ export default function CurrentStockPage() {
 
   const handleCreate = () => {
     setEditingItem(null);
+    setIsModalOpen(true);
+  };
+
+  const handlePurchaseAgain = (medicineName: string) => {
+    // Close the selection modal
+    setIsSelectionModalOpen(false);
+    setSelectedMedicineGroup(null);
+    
+    // Set editingItem to null to indicate new item creation
+    setEditingItem(null);
+    
+    // Store the medicine name to pre-populate the form
+    setPrePopulatedName(medicineName);
+    
+    // Open the item modal
     setIsModalOpen(true);
   };
 
@@ -679,6 +711,7 @@ export default function CurrentStockPage() {
           translateForm={translateForm}
           isExpired={isExpired}
           onSelectItem={handleSelectItemToEdit}
+          onPurchaseAgain={handlePurchaseAgain}
           onClose={() => {
             setIsSelectionModalOpen(false);
             setSelectedMedicineGroup(null);
@@ -696,8 +729,10 @@ export default function CurrentStockPage() {
           onClose={() => {
             setIsModalOpen(false);
             setEditingItem(null);
+            setPrePopulatedName(''); // Clear pre-populated name when closing
           }}
           isLoading={createItemMutation.isPending || updateItemMutation.isPending || disposeItemMutation.isPending || deactivateItemMutation.isPending}
+          prePopulatedName={prePopulatedName}
         />
       )}
     </div>
@@ -837,10 +872,11 @@ interface ItemSelectionModalProps {
   translateForm: (form: string) => string;
   isExpired: (dateStr: string) => boolean;
   onSelectItem: (itemId: string) => void;
+  onPurchaseAgain: (medicineName: string) => void;
   onClose: () => void;
 }
 
-function ItemSelectionModal({ medicineGroup, translateForm, isExpired, onSelectItem, onClose }: ItemSelectionModalProps) {
+function ItemSelectionModal({ medicineGroup, translateForm, isExpired, onSelectItem, onPurchaseAgain, onClose }: ItemSelectionModalProps) {
   const { t } = useLanguage();
 
   return (
@@ -901,7 +937,14 @@ function ItemSelectionModal({ medicineGroup, translateForm, isExpired, onSelectI
             ))}
           </div>
 
-          <div className="flex justify-end space-x-3 pt-4 mt-6 border-t">
+          <div className="flex justify-between pt-4 mt-6 border-t">
+            <button
+              type="button"
+              onClick={() => onPurchaseAgain(medicineGroup.name)}
+              className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
+              Purchase Again
+            </button>
             <button
               type="button"
               onClick={onClose}
@@ -924,12 +967,13 @@ interface ItemModalProps {
   onDeactivate: (item: any) => void;
   onClose: () => void;
   isLoading: boolean;
+  prePopulatedName?: string;
 }
 
-function ItemModal({ item, onSubmit, onDispose, onDeactivate, onClose, isLoading }: ItemModalProps) {
+function ItemModal({ item, onSubmit, onDispose, onDeactivate, onClose, isLoading, prePopulatedName }: ItemModalProps) {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
-    name: item?.item?.name || '',
+    name: item?.item?.name || prePopulatedName || '',
     description: item?.item?.description || '',
     form: item?.item?.form || 'TABLET',
     expiryDate: item?.item?.expiryDate || '',
@@ -1001,7 +1045,26 @@ function ItemModal({ item, onSubmit, onDispose, onDeactivate, onClose, isLoading
                 type="text"
                 placeholder={t('inventory.modal.expiryDatePlaceholder')}
                 value={formData.expiryDate}
-                onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+                onChange={(e) => {
+                  const formattedValue = formatExpiryDateInput(e.target.value);
+                  setFormData({ ...formData, expiryDate: formattedValue });
+                }}
+                onKeyDown={(e) => {
+                  // Allow: backspace, delete, tab, escape, enter, home, end, left, right, up, down
+                  if ([8, 9, 27, 13, 46, 35, 36, 37, 38, 39, 40].indexOf(e.keyCode) !== -1 ||
+                      // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                      (e.keyCode === 65 && e.ctrlKey === true) ||
+                      (e.keyCode === 67 && e.ctrlKey === true) ||
+                      (e.keyCode === 86 && e.ctrlKey === true) ||
+                      (e.keyCode === 88 && e.ctrlKey === true)) {
+                    return;
+                  }
+                  // Ensure that it is a number and stop the keypress
+                  if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                    e.preventDefault();
+                  }
+                }}
+                maxLength={7}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
