@@ -5,12 +5,6 @@ interface MedicineData {
   currentStock: number;
 }
 
-interface CountingGrid {
-  type: 'blister' | 'grid' | 'cream-grid';
-  rows: number;
-  cols: number;
-}
-
 export function generateCountingWorksheets(medicines: MedicineData[], t?: (key: string) => string) {
   // Create a new window for printing
   const printWindow = window.open('', '_blank');
@@ -142,71 +136,6 @@ function generateSingleWorksheet(medicine: MedicineData, t?: (key: string) => st
       </div>
     </div>
   `;
-}
-
-function getCountingGrid(form: string): CountingGrid {
-  switch (form.toUpperCase()) {
-    case 'CAPSULE':
-    case 'TABLET':
-      return { type: 'blister', rows: 1, cols: 1 };
-    case 'EYE_DROPS':
-      return { type: 'grid', rows: 5, cols: 2 };
-    case 'CREAM':
-      return { type: 'cream-grid', rows: 5, cols: 2 };
-    default:
-      return { type: 'grid', rows: 5, cols: 2 };
-  }
-}
-
-function generateCountingGridHTML(grid: CountingGrid): string {
-  if (grid.type === 'blister') {
-    return `
-      <div class="blister-pack">
-        <img src="/images/medicine-icons/blister_dims.svg" alt="Blister Pack" class="blister-pack-img" />
-      </div>
-    `;
-  }
-  
-  if (grid.type === 'cream-grid') {
-    return `
-      <div class="cream-grid">
-        ${Array.from({ length: grid.rows }, (_, row) => 
-          `<div class="cream-row">
-            ${Array.from({ length: grid.cols }, (_, col) => 
-              `<div class="cream-cell"></div>`
-            ).join('')}
-          </div>`
-        ).join('')}
-      </div>
-    `;
-  }
-  
-  // Regular grid for eye drops
-  return `
-    <div class="counting-grid-container">
-      ${Array.from({ length: grid.rows }, (_, row) => 
-        `<div class="grid-row">
-          ${Array.from({ length: grid.cols }, (_, col) => 
-            `<div class="grid-cell"></div>`
-          ).join('')}
-        </div>`
-      ).join('')}
-    </div>
-  `;
-}
-
-function getMedicineIcon(form: string): string {
-  switch (form.toUpperCase()) {
-    case 'CAPSULE':
-    case 'TABLET':
-      return `<img src="/images/medicine-icons/tablet_and_capsule.png" class="medicine-icon-img" />`;
-    case 'EYE_DROPS':
-      return `<img src="/images/medicine-icons/eye_drops.png" class="medicine-icon-img" />`;
-    case 'CREAM':
-      return `<img src="/images/medicine-icons/box.png" class="medicine-icon-img" />`;
-    default:
-      return `<img src="/images/medicine-icons/box.png" class="medicine-icon-img" />`;
-  }
 }
 
 function getWorksheetStyles(): string {

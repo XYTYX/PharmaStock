@@ -73,6 +73,29 @@ check_pm2() {
     fi
 }
 
+# Function to setup PM2 as a system service
+setup_pm2_service() {
+    if [ "$ENVIRONMENT" = "production" ]; then
+        log "Setting up PM2 as system service..."
+        
+        # Check if PM2 startup is already configured
+        if ! pm2 startup | grep -q "already"; then
+            log "Configuring PM2 startup..."
+            pm2 startup | grep "sudo env PATH" | bash
+        else
+            log "PM2 startup already configured"
+        fi
+        
+        # Save PM2 configuration
+        log "Saving PM2 configuration..."
+        pm2 save
+        
+        log "PM2 service setup complete"
+    else
+        log "Skipping PM2 service setup in development mode"
+    fi
+}
+
 # Function to install system dependencies (production only)
 install_system_dependencies() {
     if [ "$ENVIRONMENT" = "production" ]; then
@@ -269,6 +292,7 @@ show_usage() {
     echo "  cleanup      - Stop and clean up"
     echo "  pm2          - PM2 management"
     echo "  pm2-save     - Save PM2 configuration"
+    echo "  pm2-service  - Setup PM2 as system service"
     echo ""
     echo "Examples:"
     echo "  $0                           # Development mode, start"
@@ -297,6 +321,7 @@ main() {
             install_system_dependencies
             setup_config_files
             install_dependencies
+            setup_pm2_service
             build_application
             validate_pm2_ecosystem
             start_backend
@@ -369,6 +394,10 @@ main() {
         pm2-save)
             log "=== Saving PM2 Configuration ==="
             pm2 save
+            ;;
+        pm2-service)
+            log "=== Setting up PM2 as System Service ==="
+            setup_pm2_service
             ;;
         *)
             show_usage

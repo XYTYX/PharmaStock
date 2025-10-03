@@ -142,6 +142,7 @@ const translations = {
     'counting.horizontalVerticalCount': 'Horizontal Count x Vertical Count',
     'counting.formula': 'Horizontal count x vertical count x number of packages',
     'counting.boxFormula': 'number of boxes x packages per box x Medicines per package',
+    'counting.startCount': 'Start Count',
     
     // Dispensation
     'dispensation.subtitle': 'History of inventory movements and dispensations',
@@ -443,6 +444,7 @@ const translations = {
     'counting.horizontalVerticalCount': 'Compte Horizontal x Compte Vertical',
     'counting.formula': 'Compte horizontal x compte vertical x nombre d\'emballages',
     'counting.boxFormula': 'nombre de boîtes x emballages par boîte x Médicaments par emballage',
+    'counting.startCount': 'Commencer le Comptage',
     
     // Dispensation
     'dispensation.subtitle': 'Historique des mouvements d\'inventaire et dispensations',

@@ -113,7 +113,7 @@ export default function CurrentStockPage() {
   });
 
   const deactivateItemMutation = useMutation({
-    mutationFn: (itemId: string) => inventoryApi.deactivateItem(itemId),
+    mutationFn: (itemId: string) => inventoryApi.updateItem(itemId, { isActive: false }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['current-stock-all'] });
       setIsModalOpen(false);
@@ -393,7 +393,7 @@ export default function CurrentStockPage() {
             onClick={handleStartCount}
             className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
           >
-            Start Count
+            {t('counting.startCount')}
           </button>
           {canEdit && (
             <button
