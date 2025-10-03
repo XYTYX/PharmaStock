@@ -363,7 +363,7 @@ export default function CurrentStockPage() {
       });
     });
 
-    // Process dispensation data
+    // Process dispensation data (1 month)
     dispensations.forEach((dispensation: any) => {
       const medicineName = dispensation.item?.name;
       if (!medicineName || !groups.has(medicineName)) return;
@@ -372,7 +372,7 @@ export default function CurrentStockPage() {
       group.lastMonthDispensations += Math.abs(dispensation.totalAmount);
     });
 
-    // Process adjustment data (only negative adjustments that reduce stock)
+    // Process adjustment data (only negative adjustments that reduce stock) - 1 month
     adjustments.forEach((adjustment: any) => {
       const medicineName = adjustment.item?.name;
       if (!medicineName || !groups.has(medicineName)) return;

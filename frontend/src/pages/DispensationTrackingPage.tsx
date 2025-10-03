@@ -11,14 +11,14 @@ export default function DispensationTrackingPage() {
   // All users can delete actions
   const canDelete = true;
   
-  // Calculate date range for last two months inclusive of today
-  const getLastTwoMonthsDateRange = () => {
+  // Calculate date range for last month inclusive of today
+  const getLastMonthDateRange = () => {
     const today = new Date();
-    const twoMonthsAgo = new Date();
-    twoMonthsAgo.setMonth(today.getMonth() - 2);
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(today.getMonth() - 1);
     
     return {
-      dateFrom: twoMonthsAgo.toISOString().split('T')[0],
+      dateFrom: oneMonthAgo.toISOString().split('T')[0],
       dateTo: today.toISOString().split('T')[0]
     };
   };
@@ -30,9 +30,14 @@ export default function DispensationTrackingPage() {
     dateTo: ''
   });
 
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20
+  });
+
   // Set initial date range on component mount
   useEffect(() => {
-    const dateRange = getLastTwoMonthsDateRange();
+    const dateRange = getLastMonthDateRange();
     setFilter(prev => ({
       ...prev,
       dateFrom: dateRange.dateFrom,
@@ -40,8 +45,13 @@ export default function DispensationTrackingPage() {
     }));
   }, []);
 
+  // Reset pagination when filters change
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, page: 1 }));
+  }, [filter.search, filter.reason, filter.dateFrom, filter.dateTo]);
+
   const { data: inventoryLogs, isLoading, error } = useQuery({
-    queryKey: ['inventory-logs', filter],
+    queryKey: ['inventory-logs', filter, pagination],
     queryFn: () => {
       // Add end-of-day time to endDate to include the full day
       const endDate = filter.dateTo ? new Date(filter.dateTo + 'T23:59:59.999Z').toISOString() : undefined;
@@ -50,7 +60,9 @@ export default function DispensationTrackingPage() {
         search: filter.search,
         reason: filter.reason || undefined,
         startDate: filter.dateFrom || undefined,
-        endDate: endDate
+        endDate: endDate,
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString()
       });
     },
     refetchOnMount: true,
@@ -64,7 +76,27 @@ export default function DispensationTrackingPage() {
     queryFn: () => inventoryApi.getCurrentStock({ limit: 1000 })
   });
 
+  // Fetch total counts for summary cards (without pagination)
+  const { data: totalCounts } = useQuery({
+    queryKey: ['inventory-logs-totals', filter],
+    queryFn: () => {
+      const endDate = filter.dateTo ? new Date(filter.dateTo + 'T23:59:59.999Z').toISOString() : undefined;
+      
+      return inventoryApi.getInventoryLogs({
+        search: filter.search,
+        reason: filter.reason || undefined,
+        startDate: filter.dateFrom || undefined,
+        endDate: endDate,
+        limit: '1000' // Get a large number to count all
+      });
+    },
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0
+  });
+
   const logs = inventoryLogs?.logs || [];
+  const totalLogs = totalCounts?.logs || [];
 
   // Check if an item can be deleted (i.e., if it's still active and is a dispensation)
   const canDeleteItem = (log: any) => {
@@ -168,25 +200,25 @@ export default function DispensationTrackingPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="text-2xl font-bold text-green-600">
-            {logs.filter((log: any) => log.reason === 'PURCHASE').length}
+            {totalLogs.filter((log: any) => log.reason === 'PURCHASE').length}
           </div>
           <div className="text-sm text-gray-500">{t('dispensation.purchases')}</div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="text-2xl font-bold text-blue-600">
-            {logs.filter((log: any) => log.reason === 'DISPENSATION').length}
+            {totalLogs.filter((log: any) => log.reason === 'DISPENSATION').length}
           </div>
           <div className="text-sm text-gray-500">{t('dispensation.dispensations')}</div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="text-2xl font-bold text-yellow-600">
-            {logs.filter((log: any) => log.reason === 'ADJUSTMENT').length}
+            {totalLogs.filter((log: any) => log.reason === 'ADJUSTMENT').length}
           </div>
           <div className="text-sm text-gray-500">{t('dispensation.adjustments')}</div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="text-2xl font-bold text-red-600">
-            {logs.filter((log: any) => log.reason === 'EXPIRED' || log.reason === 'DAMAGED').length}
+            {totalLogs.filter((log: any) => log.reason === 'EXPIRED' || log.reason === 'DAMAGED').length}
           </div>
           <div className="text-sm text-gray-500">{t('dispensation.losses')}</div>
         </div>
@@ -343,6 +375,81 @@ export default function DispensationTrackingPage() {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {inventoryLogs?.pagination && inventoryLogs.pagination.pages > 1 && (
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+          <div className="flex-1 flex justify-between sm:hidden">
+            <button
+              onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+              disabled={pagination.page === 1}
+              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+              disabled={pagination.page >= inventoryLogs.pagination.pages}
+              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Showing{' '}
+                <span className="font-medium">
+                  {(pagination.page - 1) * pagination.limit + 1}
+                </span>{' '}
+                to{' '}
+                <span className="font-medium">
+                  {Math.min(pagination.page * pagination.limit, inventoryLogs.pagination.total)}
+                </span>{' '}
+                of{' '}
+                <span className="font-medium">{inventoryLogs.pagination.total}</span>{' '}
+                results
+              </p>
+            </div>
+            <div>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <button
+                  onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                  disabled={pagination.page === 1}
+                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                {Array.from({ length: Math.min(5, inventoryLogs.pagination.pages) }, (_, i) => {
+                  const pageNum = Math.max(1, Math.min(inventoryLogs.pagination.pages - 4, pagination.page - 2)) + i;
+                  if (pageNum > inventoryLogs.pagination.pages) return null;
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
+                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                        pageNum === pagination.page
+                          ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                  disabled={pagination.page >= inventoryLogs.pagination.pages}
+                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
