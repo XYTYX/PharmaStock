@@ -51,7 +51,7 @@ model InventoryLog {
   patientId          String?
   prescriptionNumber String?
   itemId             String
-  totalAmount        Float
+  totalAmount        Decimal
   notes              String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -69,7 +69,7 @@ model InventoryLog {
 model Inventory {
   id            String   @id @default(cuid())
   itemId        String
-  currentStock  Int
+  currentStock  Decimal
   createdAt     DateTime @default(now())
 
   // Relations
