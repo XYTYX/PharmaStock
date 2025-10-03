@@ -755,7 +755,7 @@ export default function DispensationsPage() {
               {/* Patient First Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('dispensations.patientFirstName')} ({t('common.optional')})
+                  {t('dispensations.patientFirstName')}
                 </label>
                 <input
                   type="text"
@@ -769,7 +769,7 @@ export default function DispensationsPage() {
               {/* Patient Last Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('dispensations.patientLastName')} ({t('common.optional')})
+                  {t('dispensations.patientLastName')}
                 </label>
                 <input
                   type="text"
@@ -783,7 +783,7 @@ export default function DispensationsPage() {
               {/* Patient Number */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('dispensations.patientNumber')} ({t('common.optional')})
+                  {t('dispensations.patientNumber')}
                 </label>
                 <input
                   type="text"

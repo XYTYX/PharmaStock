@@ -19,7 +19,7 @@ module.exports = {
       env_production: {
         NODE_ENV: 'production',
         PORT: 3000,
-        DATABASE_URL: 'file:/var/cache/pharmastock.db',
+        DATABASE_URL: 'file:/var/cache/PharmaStock/pharmastock.db',
         FRONTEND_URL: 'http://localhost:3001',
         // Production-specific log locations
         log_file: '/var/log/pharmastock/backend.log',
