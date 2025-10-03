@@ -89,6 +89,16 @@ async function seedCSVData() {
   let itemsUpdated = 0;
   let inventoryUpdated = 0;
   
+  // Get Joyce admin user for logging
+  const joyceUser = await prisma.user.findUnique({
+    where: { username: 'joyce' }
+  });
+  
+  if (!joyceUser) {
+    console.log('❌ Joyce admin user not found, skipping inventory logs');
+    return;
+  }
+  
   for (const row of csvData) {
     try {
       // Check if item already exists
@@ -115,17 +125,44 @@ async function seedCSVData() {
         });
         
         if (existingInventory) {
+          const previousStock = existingInventory.currentStock;
+          const stockDifference = row.count - previousStock;
+          
           await prisma.inventory.update({
             where: { id: existingInventory.id },
             data: {
               currentStock: row.count
             }
           });
+          
+          // Create inventory log for stock adjustment
+          if (stockDifference !== 0) {
+            await prisma.inventoryLog.create({
+              data: {
+                itemId: existingItem.id,
+                userId: joyceUser.id,
+                reason: 'ADJUSTMENT',
+                totalAmount: stockDifference,
+                notes: `CSV import adjustment: ${stockDifference > 0 ? '+' : ''}${stockDifference} (${previousStock} → ${row.count})`
+              }
+            });
+          }
         } else {
           await prisma.inventory.create({
             data: {
               itemId: existingItem.id,
               currentStock: row.count
+            }
+          });
+          
+          // Create inventory log for new inventory record
+          await prisma.inventoryLog.create({
+            data: {
+              itemId: existingItem.id,
+              userId: joyceUser.id,
+              reason: 'ADJUSTMENT',
+              totalAmount: row.count,
+              notes: `CSV import: Initial stock of ${row.count}`
             }
           });
         }
@@ -137,7 +174,6 @@ async function seedCSVData() {
         const newItem = await prisma.item.create({
           data: {
             name: row.name,
-            description: `${row.name} - ${row.form}`,
             form: row.form,
             expiryDate: row.expiryDate,
             isActive: true
@@ -149,6 +185,17 @@ async function seedCSVData() {
           data: {
             itemId: newItem.id,
             currentStock: row.count
+          }
+        });
+        
+        // Create inventory log for new item
+        await prisma.inventoryLog.create({
+          data: {
+            itemId: newItem.id,
+            userId: joyceUser.id,
+            reason: 'ADJUSTMENT',
+            totalAmount: row.count,
+            notes: `CSV import: New item with initial stock of ${row.count}`
           }
         });
        
