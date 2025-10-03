@@ -457,9 +457,9 @@ export default function DispensationsPage() {
         </div>
       </div>
 
-      {/* Staging Sidebar */}
-      <div className="w-80 bg-white border-l border-gray-200 flex flex-col max-h-screen">
-        <div className="p-4 border-b border-gray-200">
+      {/* Sticky Staging Sidebar */}
+      <div className="w-80 bg-white border-l border-gray-200 flex flex-col sticky top-6 h-[calc(100vh-6rem)] max-h-[calc(100vh-6rem)]">
+        <div className="p-4 border-b border-gray-200 flex-shrink-0">
           <h2 className="text-lg font-medium text-gray-900">
             {t('dispensations.stagingArea')}
           </h2>
@@ -506,7 +506,7 @@ export default function DispensationsPage() {
           )}
         </div>
         
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-4 border-t border-gray-200 flex-shrink-0">
           <div className="mb-3">
             <div className="text-sm text-gray-600">
               {t('dispensations.totalItems')}: {stagedMedications.length}
