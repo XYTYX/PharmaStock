@@ -94,13 +94,18 @@ export default function CurrentStockPage() {
   });
 
   const disposeItemMutation = useMutation({
-    mutationFn: ({ itemId, quantity }: { itemId: string; quantity: number }) => 
-      inventoryApi.createInventoryAdjustment({
+    mutationFn: async ({ itemId, quantity }: { itemId: string; quantity: number }) => {
+      // First dispose the stock
+      await inventoryApi.createInventoryAdjustment({
         itemId,
         quantity: -quantity, // Negative quantity to subtract
         reason: 'DISPOSE',
         notes: `Disposed of all ${quantity} units`
-      }),
+      });
+      
+      // Then deactivate the item
+      await inventoryApi.deactivateItem(itemId);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['current-stock-all'] });
       setIsModalOpen(false);
@@ -113,7 +118,7 @@ export default function CurrentStockPage() {
   });
 
   const deactivateItemMutation = useMutation({
-    mutationFn: (itemId: string) => inventoryApi.updateItem(itemId, { isActive: false }),
+    mutationFn: (itemId: string) => inventoryApi.deactivateItem(itemId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['current-stock-all'] });
       setIsModalOpen(false);

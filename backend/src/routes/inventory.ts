@@ -173,11 +173,7 @@ router.get('/stock', async (req, res) => {
     const limitNum = parseInt(limit as string);
     const skip = (pageNum - 1) * limitNum;
 
-    const where: any = {
-      item: {
-        isActive: true
-      }
-    };
+    const where: any = {};
 
     if (search) {
       where.item.name = {
