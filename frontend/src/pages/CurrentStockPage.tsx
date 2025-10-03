@@ -221,6 +221,52 @@ export default function CurrentStockPage() {
     generateCountingWorksheets(Array.from(uniqueCombinations.values()), t);
   };
 
+  const handleExportCSV = () => {
+    // Prepare CSV data with the required columns
+    const csvData = [];
+    
+    // Add header row
+    csvData.push(['name', 'form', 'expiry_date', 'current_stock', 'monthly_usage', 'forecasted_usage_before_expiry', 'stock_will_last_months']);
+    
+    // Add data rows
+    filteredMedicineGroups.forEach(group => {
+      group.forms.forEach(formEntry => {
+        formEntry.expiryDates.forEach(expiryEntry => {
+          const row = [
+            group.name,
+            translateForm(formEntry.form),
+            expiryEntry.expiryDate,
+            expiryEntry.currentStock.toString(),
+            group.lastMonthDispensations.toString(),
+            expiryEntry.forecastMonths !== null && expiryEntry.forecastMonths !== undefined 
+              ? `${expiryEntry.forecastMonths}%` 
+              : 'N/A',
+            group.forecastMonths !== null 
+              ? group.forecastMonths.toString() 
+              : 'N/A'
+          ];
+          csvData.push(row);
+        });
+      });
+    });
+    
+    // Convert to CSV string
+    const csvContent = csvData.map(row => 
+      row.map(field => `"${field.toString().replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `current_stock_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Fetch all inventory data once
   const { data: stockData, isLoading, error } = useQuery({
     queryKey: ['current-stock-all'],
@@ -527,6 +573,12 @@ export default function CurrentStockPage() {
             }`}
           >
             {showInactive ? t('inventory.hideInactive') : t('inventory.showInactive')}
+          </button>
+          <button
+            onClick={handleExportCSV}
+            className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            Export to CSV
           </button>
           <button
             onClick={handleStartCount}
