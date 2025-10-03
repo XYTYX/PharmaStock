@@ -37,7 +37,7 @@ app.use(helmet());
 // CORS configuration
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.FRONTEND_URL || 'http://new-sight.local', 'http://new-sight.local', 'https://new-sight.local']
+    ? [process.env.FRONTEND_URL || 'http://new-sight.local']
     : ['http://localhost:3001', 'http://127.0.0.1:3001'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

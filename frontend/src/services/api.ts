@@ -136,6 +136,11 @@ export const inventoryApi = {
     const response = await api.put(`/inventory/items/${id}/stock`, { currentStock });
     return response.data;
   },
+
+  deactivateItem: async (id: string) => {
+    const response = await api.put(`/inventory/items/${id}/deactivate`);
+    return response.data;
+  },
 };
 
 // Users API

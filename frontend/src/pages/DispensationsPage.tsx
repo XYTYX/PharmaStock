@@ -107,7 +107,7 @@ export default function DispensationsPage() {
     const medicationMap = new Map<string, Medication>();
     
     stockData.inventory.forEach((item: any) => {
-      if (!item.item || item.currentStock <= 0) return;
+      if (!item.item || item.currentStock <= 0 || !item.item.isActive) return;
       
       const name = item.item.name;
       if (!medicationMap.has(name)) {
@@ -155,6 +155,7 @@ export default function DispensationsPage() {
           inv.item?.form === form && 
           inv.item?.expiryDate && 
           inv.currentStock > 0 &&
+          inv.item?.isActive &&
           !isExpired(inv.item.expiryDate)) { // Filter out expired dates
         expiryDates.add(inv.item.expiryDate);
       }
@@ -589,7 +590,8 @@ export default function DispensationsPage() {
                           if (inv.item?.name === selectedMedication.name && 
                               inv.item?.form === dispensationForm.form && 
                               inv.item?.expiryDate && 
-                              inv.currentStock > 0) {
+                              inv.currentStock > 0 &&
+                              inv.item?.isActive) {
                             allExpiryDates.add(inv.item.expiryDate);
                           }
                         });

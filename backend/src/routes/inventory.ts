@@ -375,6 +375,54 @@ router.put('/items/:id', requireRole(['ADMIN']), async (req, res) => {
   }
 });
 
+// Deactivate item (Admin only)
+router.put('/items/:id/deactivate', requireRole(['ADMIN']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user.id;
+
+    // Check if item exists
+    const existingItem = await prisma.item.findUnique({
+      where: { id }
+    });
+
+    if (!existingItem) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    if (!existingItem.isActive) {
+      return res.status(400).json({ error: 'Item is already inactive' });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Deactivate the item
+      const item = await tx.item.update({
+        where: { id },
+        data: { isActive: false }
+      });
+
+      // Create inventory log for deactivation
+      await tx.inventoryLog.create({
+        data: {
+          itemId: id,
+          userId,
+          reason: 'ADJUSTMENT',
+          totalAmount: 0,
+          notes: `Item deactivated: ${item.name}`,
+          isItemActive: false
+        }
+      });
+
+      return item;
+    });
+
+    res.json({ item: result });
+  } catch (error) {
+    console.error('Error deactivating item:', error);
+    res.status(500).json({ error: 'Failed to deactivate item' });
+  }
+});
+
 // Update item stock directly (Admin only)
 router.put('/items/:id/stock', requireRole(['ADMIN']), async (req, res) => {
   try {

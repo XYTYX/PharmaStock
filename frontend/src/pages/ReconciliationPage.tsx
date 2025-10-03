@@ -66,18 +66,20 @@ export default function ReconciliationPage() {
   // Initialize reconciliation data when stock data is loaded
   useMemo(() => {
     if (stockData?.inventory) {
-      const initialData = stockData.inventory.map((item: any) => ({
-        id: item.id,
-        item: {
-          id: item.item?.id || '',
-          name: item.item?.name || 'Article supprimé',
-          form: item.item?.form || '',
-          expiryDate: item.item?.expiryDate || ''
-        },
-        currentStock: item.currentStock || 0,
-        actualStock: item.currentStock || 0, // Initialize with current stock
-        adjustment: 0 // Will be calculated
-      }));
+      const initialData = stockData.inventory
+        .filter((item: any) => item.item?.isActive) // Only include active items
+        .map((item: any) => ({
+          id: item.id,
+          item: {
+            id: item.item?.id || '',
+            name: item.item?.name || 'Article supprimé',
+            form: item.item?.form || '',
+            expiryDate: item.item?.expiryDate || ''
+          },
+          currentStock: item.currentStock || 0,
+          actualStock: item.currentStock || 0, // Initialize with current stock
+          adjustment: 0 // Will be calculated
+        }));
       setReconciliationData(initialData);
     }
   }, [stockData]);

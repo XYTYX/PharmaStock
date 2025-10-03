@@ -27,6 +27,7 @@ export default function CurrentStockPage() {
     sortBy: 'name' as 'name' | 'expiryDate',
     sortOrder: 'asc' as 'asc' | 'desc'
   });
+  const [showInactive, setShowInactive] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
@@ -111,6 +112,20 @@ export default function CurrentStockPage() {
     }
   });
 
+  const deactivateItemMutation = useMutation({
+    mutationFn: (itemId: string) => inventoryApi.deactivateItem(itemId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['current-stock-all'] });
+      setIsModalOpen(false);
+      setEditingItem(null);
+      alert(t('inventory.modal.deactivatedSuccessfully'));
+    },
+    onError: (error) => {
+      console.error('Error deactivating item:', error);
+      alert('Failed to deactivate item. Please try again.');
+    }
+  });
+
   // Admin functions
   const handleEdit = (medicineGroup: MedicineGroup) => {
     setSelectedMedicineGroup(medicineGroup);
@@ -158,6 +173,15 @@ export default function CurrentStockPage() {
         itemId: item.item.id,
         quantity: item.currentStock
       });
+    }
+  };
+
+  const handleDeactivate = (item: any) => {
+    const confirmMessage = t('inventory.modal.deactivateConfirm')
+      .replace('{itemName}', item.item.name);
+    
+    if (window.confirm(confirmMessage)) {
+      deactivateItemMutation.mutate(item.item.id);
     }
   };
 
@@ -224,7 +248,9 @@ export default function CurrentStockPage() {
 
     // Process inventory data
     allInventory.forEach((item: any) => {
-      if (!item.item?.isActive) return;
+      // Filter based on showInactive state
+      if (!showInactive && !item.item?.isActive) return;
+      if (showInactive && item.item?.isActive) return;
 
       const medicineName = item.item.name;
       const form = item.item.form || 'TABLET';
@@ -278,7 +304,7 @@ export default function CurrentStockPage() {
     });
 
     return Array.from(groups.values());
-  }, [allInventory, dispensations]);
+  }, [allInventory, dispensations, showInactive]);
 
   // Client-side filtering and sorting
   const filteredMedicineGroups = useMemo(() => {
@@ -354,6 +380,16 @@ export default function CurrentStockPage() {
         </div>
         <div className="flex gap-3">
           <button
+            onClick={() => setShowInactive(!showInactive)}
+            className={`px-4 py-2 rounded-md focus:outline-none focus:ring-2 ${
+              showInactive 
+                ? 'bg-orange-600 text-white hover:bg-orange-700 focus:ring-orange-500' 
+                : 'bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500'
+            }`}
+          >
+            {showInactive ? t('inventory.hideInactive') : t('inventory.showInactive')}
+          </button>
+          <button
             onClick={handleStartCount}
             className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
           >
@@ -424,15 +460,16 @@ export default function CurrentStockPage() {
             group={group}
             translateForm={translateForm}
             isExpired={isExpired}
-            canEdit={canEdit}
+            canEdit={canEdit && !showInactive}
             onEdit={handleEdit}
+            isInactive={showInactive}
           />
         ))}
       </div>
 
       {filteredMedicineGroups.length === 0 && (
         <div className="text-center py-8 text-gray-500">
-          {t('inventory.noStock')}
+          {showInactive ? t('inventory.noInactiveMedications') : t('inventory.noStock')}
         </div>
       )}
 
@@ -456,11 +493,12 @@ export default function CurrentStockPage() {
           item={editingItem}
           onSubmit={handleSubmit}
           onDispose={handleDispose}
+          onDeactivate={handleDeactivate}
           onClose={() => {
             setIsModalOpen(false);
             setEditingItem(null);
           }}
-          isLoading={createItemMutation.isPending || updateItemMutation.isPending || disposeItemMutation.isPending}
+          isLoading={createItemMutation.isPending || updateItemMutation.isPending || disposeItemMutation.isPending || deactivateItemMutation.isPending}
         />
       )}
     </div>
@@ -474,9 +512,10 @@ interface MedicineCardProps {
   isExpired: (dateStr: string) => boolean;
   canEdit: boolean;
   onEdit: (item: any) => void;
+  isInactive?: boolean;
 }
 
-function MedicineCard({ group, translateForm, isExpired, canEdit, onEdit }: MedicineCardProps) {
+function MedicineCard({ group, translateForm, isExpired, canEdit, onEdit, isInactive }: MedicineCardProps) {
   const { t } = useLanguage();
 
   const getStockLevel = (stock: number, forecastMonths: number | null) => {
@@ -490,21 +529,36 @@ function MedicineCard({ group, translateForm, isExpired, canEdit, onEdit }: Medi
   const stockLevel = getStockLevel(group.totalStock, group.forecastMonths);
 
   return (
-    <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+    <div className={`rounded-lg shadow-md border p-6 transition-shadow ${
+      isInactive 
+        ? 'bg-gray-100 border-gray-300 opacity-75' 
+        : 'bg-white border-gray-200 hover:shadow-lg'
+    }`}>
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">{group.name}</h3>
+          <h3 className={`text-lg font-semibold mb-1 ${
+            isInactive ? 'text-gray-600' : 'text-gray-900'
+          }`}>
+            {group.name}
+            {isInactive && (
+              <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
+                {t('inventory.inactiveMedications')}
+              </span>
+            )}
+          </h3>
           <div className="flex items-center gap-2">
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stockLevel.color}`}>
-              {stockLevel.text}
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              isInactive ? 'bg-gray-200 text-gray-600' : stockLevel.color
+            }`}>
+              {isInactive ? 'Inactive' : stockLevel.text}
             </span>
-            <span className="text-sm text-gray-600">
+            <span className={`text-sm ${isInactive ? 'text-gray-500' : 'text-gray-600'}`}>
               Total: {group.totalStock}
             </span>
           </div>
         </div>
-        {canEdit && (
+        {canEdit && !isInactive && (
           <button
             onClick={() => onEdit(group)}
             className="text-blue-600 hover:text-blue-900 text-sm"
@@ -643,11 +697,12 @@ interface ItemModalProps {
   item: any;
   onSubmit: (data: any) => void;
   onDispose: (item: any) => void;
+  onDeactivate: (item: any) => void;
   onClose: () => void;
   isLoading: boolean;
 }
 
-function ItemModal({ item, onSubmit, onDispose, onClose, isLoading }: ItemModalProps) {
+function ItemModal({ item, onSubmit, onDispose, onDeactivate, onClose, isLoading }: ItemModalProps) {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: item?.item?.name || '',
@@ -753,21 +808,53 @@ function ItemModal({ item, onSubmit, onDispose, onClose, isLoading }: ItemModalP
               </div>
             )}
 
-            <div className="flex justify-between pt-4">
-              {/* Dispose button - only show for existing items with stock */}
-              {item && item.currentStock > 0 && (
-                <button
-                  type="button"
-                  onClick={() => onDispose(item)}
-                  disabled={isLoading}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
-                >
-                  {t('inventory.modal.dispose')}
-                </button>
+            {/* Action buttons section */}
+            <div className="pt-4 space-y-4">
+              {/* Destructive actions - only show for existing items */}
+              {item && (
+                <div className="space-y-3">
+                  <div className="text-sm font-medium text-gray-700">Actions</div>
+                  
+                  {/* Dispose button - only show for items with stock */}
+                  {item.currentStock > 0 && (
+                    <div className="flex items-center justify-between p-3 border border-red-200 rounded-md bg-red-50">
+                      <div>
+                        <div className="text-sm font-medium text-red-800">{t('inventory.modal.dispose')}</div>
+                        <div className="text-xs text-red-600">Sets quantity to 0 and deactivates</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onDispose(item)}
+                        disabled={isLoading}
+                        className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
+                      >
+                        {t('inventory.modal.dispose')}
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Deactivate button - only show for active items */}
+                  {item.item?.isActive && (
+                    <div className="flex items-center justify-between p-3 border border-orange-200 rounded-md bg-orange-50">
+                      <div>
+                        <div className="text-sm font-medium text-orange-800">{t('inventory.modal.deactivate')}</div>
+                        <div className="text-xs text-orange-600">Hides the medicine from use</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onDeactivate(item)}
+                        disabled={isLoading}
+                        className="px-4 py-2 text-sm font-medium text-white bg-orange-600 border border-transparent rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50"
+                      >
+                        {t('inventory.modal.deactivate')}
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
               
-              {/* Action buttons */}
-              <div className="flex space-x-3 ml-auto">
+              {/* Form action buttons */}
+              <div className="flex justify-end space-x-3 pt-2 border-t">
                 <button
                   type="button"
                   onClick={onClose}

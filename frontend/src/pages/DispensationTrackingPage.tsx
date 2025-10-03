@@ -58,7 +58,21 @@ export default function DispensationTrackingPage() {
     staleTime: 0
   });
 
+  // Fetch current stock to check item status
+  const { data: stockData } = useQuery({
+    queryKey: ['current-stock-all'],
+    queryFn: () => inventoryApi.getCurrentStock({ limit: 1000 })
+  });
+
   const logs = inventoryLogs?.logs || [];
+
+  // Check if an item can be undone (i.e., if it's still active)
+  const canUndoItem = (log: any) => {
+    if (!stockData?.inventory || !log.item?.id) return false;
+    
+    const currentItem = stockData.inventory.find((inv: any) => inv.item?.id === log.item.id);
+    return currentItem?.item?.isActive === true;
+  };
 
   // Undo mutation
   const undoLogMutation = useMutation({
@@ -326,9 +340,17 @@ export default function DispensationTrackingPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
                         onClick={() => handleUndoLog(log)}
-                        disabled={undoLogMutation.isPending}
-                        className="text-blue-600 hover:text-blue-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title={t('dispensation.undoTooltip')}
+                        disabled={undoLogMutation.isPending || !canUndoItem(log)}
+                        className={`${
+                          canUndoItem(log) 
+                            ? 'text-blue-600 hover:text-blue-900' 
+                            : 'text-gray-400 cursor-not-allowed'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        title={
+                          canUndoItem(log) 
+                            ? t('dispensation.undoTooltip')
+                            : t('dispensation.cannotUndo')
+                        }
                       >
                         {t('dispensation.undo')}
                       </button>
