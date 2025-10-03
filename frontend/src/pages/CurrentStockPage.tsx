@@ -212,7 +212,7 @@ export default function CurrentStockPage() {
 
   const handleConfirmDispose = () => {
     if (!disposeReason.trim()) {
-      alert('Please provide a reason for disposal.');
+      alert(t('inventory.modal.disposeReasonRequired'));
       return;
     }
     
@@ -755,28 +755,30 @@ export default function CurrentStockPage() {
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Dispose Item
+                {t('inventory.modal.disposeTitle')}
               </h3>
               
               <div className="mb-4">
                 <p className="text-sm text-gray-600 mb-2">
-                  You are about to dispose of <strong>{disposeItem.item.name}</strong> with <strong>{disposeItem.currentStock}</strong> units in stock.
+                  {t('inventory.modal.disposeWarning')
+                    .replace('{itemName}', disposeItem.item.name)
+                    .replace('{quantity}', disposeItem.currentStock.toString())}
                 </p>
                 <p className="text-sm text-red-600 font-medium">
-                  This action cannot be undone. The item will be deactivated after disposal.
+                  {t('inventory.modal.disposeIrreversible')}
                 </p>
               </div>
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  What is the reason for disposal? *
+                  {t('inventory.modal.disposeReasonLabel')} *
                 </label>
                 <textarea
                   value={disposeReason}
                   onChange={(e) => setDisposeReason(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                   rows={3}
-                  placeholder="Enter reason for disposal (e.g., expired, damaged, recalled, etc.)"
+                  placeholder={t('inventory.modal.disposeReasonPlaceholder')}
                   required
                 />
               </div>
@@ -791,7 +793,7 @@ export default function CurrentStockPage() {
                   }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
                 >
-                  Cancel
+                  {t('inventory.modal.cancel')}
                 </button>
                 <button
                   type="button"
@@ -799,7 +801,7 @@ export default function CurrentStockPage() {
                   disabled={disposeItemMutation.isPending}
                   className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {disposeItemMutation.isPending ? 'Disposing...' : 'Dispose Item'}
+                  {disposeItemMutation.isPending ? t('inventory.modal.disposing') : t('inventory.modal.disposeButton')}
                 </button>
               </div>
             </div>
@@ -916,19 +918,19 @@ function MedicineCard({ group, translateForm, isExpired, canEdit, onEdit, isInac
       {/* Dispensation Stats */}
       <div className="border-t pt-3 space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Last Month Dispensed:</span>
+          <span className="text-gray-600">{t('inventory.lastMonthDispensed')}</span>
           <span className="font-medium text-gray-900">{group.lastMonthDispensations}</span>
         </div>
         
         {group.forecastMonths !== null && (
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Total Forecast:</span>
+            <span className="text-gray-600">{t('inventory.totalForecast')}</span>
             <span className={`font-medium ${
               group.forecastMonths <= 3 ? 'text-red-600' : 
               group.forecastMonths <= 6 ? 'text-yellow-600' : 
               'text-green-600'
             }`}>
-              {group.forecastMonths} {group.forecastMonths === 1 ? 'month' : 'months'}
+              {group.forecastMonths} {group.forecastMonths === 1 ? t('inventory.month') : t('inventory.months')}
             </span>
           </div>
         )}
@@ -1014,7 +1016,7 @@ function ItemSelectionModal({ medicineGroup, translateForm, isExpired, onSelectI
               onClick={() => onPurchaseAgain(medicineGroup.name)}
               className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
             >
-              Purchase Again
+              {t('inventory.purchaseAgain')}
             </button>
             <button
               type="button"
