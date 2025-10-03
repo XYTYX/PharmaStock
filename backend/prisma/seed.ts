@@ -25,7 +25,8 @@ function parseCSV(csvPath: string): CSVRow[] {
       
       const columns = line.split(',');
       if (columns.length >= 4) {
-        const name = columns[0]?.trim();
+        const name = columns[0]?.trim().replace(/^"(.*)"$/, '$1');
+        console.log(name);
         const form = columns[1]?.trim();
         const count = parseInt(columns[2]?.trim()) || 0;
         const expiryDate = columns[3]?.trim();
@@ -150,7 +151,7 @@ async function seedCSVData() {
             currentStock: row.count
           }
         });
-        
+       
         itemsCreated++;
         inventoryUpdated++;
       }
