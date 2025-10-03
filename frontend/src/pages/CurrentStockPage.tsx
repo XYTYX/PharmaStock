@@ -226,7 +226,15 @@ export default function CurrentStockPage() {
     const csvData = [];
     
     // Add header row
-    csvData.push(['name', 'form', 'expiry_date', 'current_stock', 'monthly_usage', 'forecasted_usage_before_expiry', 'stock_will_last_months']);
+    csvData.push([
+      t('inventory.modal.name'), 
+      t('inventory.form'), 
+      t('inventory.expiryDate'), 
+      t('inventory.quantity'), 
+      t('inventory.monthlyUsage'), 
+      t('inventory.forecastedUsageBeforeExpiry'), 
+      t('inventory.stockWillLastMonths')
+    ]);
     
     // Add data rows
     filteredMedicineGroups.forEach(group => {
@@ -578,7 +586,7 @@ export default function CurrentStockPage() {
             onClick={handleExportCSV}
             className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
-            Export to CSV
+            {t('inventory.exportCSV')}
           </button>
           <button
             onClick={handleStartCount}
@@ -785,7 +793,7 @@ function MedicineCard({ group, translateForm, isExpired, canEdit, onEdit, isInac
                             ? 'text-yellow-600' 
                             : 'text-green-600'
                       }`}>
-                        {expiryEntry.forecastMonths === 0 ? '0% used' : `will use ${expiryEntry.forecastMonths}%`}
+                        {expiryEntry.forecastMonths === 0 ? t('inventory.zeroPercentUsedBeforeExpiry') : t('inventory.willUsePercentBeforeExpiry').replace('{percentage}', expiryEntry.forecastMonths.toString())}
                       </span>
                     )}
                   </div>
@@ -833,6 +841,7 @@ interface ItemSelectionModalProps {
 }
 
 function ItemSelectionModal({ medicineGroup, translateForm, isExpired, onSelectItem, onClose }: ItemSelectionModalProps) {
+  const { t } = useLanguage();
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -877,7 +886,7 @@ function ItemSelectionModal({ medicineGroup, translateForm, isExpired, onSelectI
                                   ? 'text-yellow-600' 
                                   : 'text-green-600'
                             }`}>
-                              {expiryEntry.forecastMonths === 0 ? '0% used' : `will use ${expiryEntry.forecastMonths}%`}
+                              {expiryEntry.forecastMonths === 0 ? t('inventory.zeroPercentUsedBeforeExpiry') : t('inventory.willUsePercentBeforeExpiry').replace('{percentage}', expiryEntry.forecastMonths.toString())}
                             </div>
                           )}
                         </div>

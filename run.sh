@@ -89,7 +89,10 @@ setup_pm2_service() {
         # Save PM2 configuration
         log "Saving PM2 configuration..."
         pm2 save
-        
+
+        log "Enabling PM2 startup..."
+        sudo systemctl enable pm2-$(whoami)
+
         log "PM2 service setup complete"
     else
         log "Skipping PM2 service setup in development mode"

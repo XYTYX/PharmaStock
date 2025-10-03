@@ -127,6 +127,14 @@ const translations = {
     'inventory.modal.saving': 'Saving...',
     'inventory.modal.adjustHint': 'To adjust stock quantities, please use the reconciliation feature.',
     
+    // CSV Export
+    'inventory.exportCSV': 'Export to CSV',
+    'inventory.forecastedUsageBeforeExpiry': 'Forecasted Usage Before Expiry',
+    'inventory.stockWillLastMonths': 'Stock Will Last (Months)',
+    'inventory.monthlyUsage': 'Monthly Usage',
+    'inventory.zeroPercentUsedBeforeExpiry': '0% used before expiry',
+    'inventory.willUsePercentBeforeExpiry': 'will use {percentage}% before expiry',
+    
     // Counting
     'counting.box': 'Box',
     'counting.package': 'Package',
@@ -433,6 +441,14 @@ const translations = {
     'inventory.modal.deactivatedSuccessfully': 'Article désactivé avec succès',
     'inventory.modal.saving': 'Enregistrement...',
     'inventory.modal.adjustHint': 'Pour ajuster les quantités de stock, veuillez utiliser la fonction de réconciliation.',
+    
+    // CSV Export
+    'inventory.exportCSV': 'Exporter en CSV',
+    'inventory.forecastedUsageBeforeExpiry': 'Utilisation Prévue Avant Expiration',
+    'inventory.stockWillLastMonths': 'Le Stock Durera (Mois)',
+    'inventory.monthlyUsage': 'Utilisation Mensuelle',
+    'inventory.zeroPercentUsedBeforeExpiry': '0% utilisé avant expiration',
+    'inventory.willUsePercentBeforeExpiry': 'utilisera {percentage}% avant expiration',
     
     // Counting
     'counting.box': 'Boîte',
