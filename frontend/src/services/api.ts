@@ -146,6 +146,37 @@ export const inventoryApi = {
     const response = await api.delete(`/inventory/logs/${id}`);
     return response.data;
   },
+
+  // Patient management
+  getPatients: async (params?: { page?: string; limit?: string; search?: string }) => {
+    const response = await api.get('/patients', { params });
+    return response.data;
+  },
+
+  getPatient: async (id: string) => {
+    const response = await api.get(`/patients/${id}`);
+    return response.data;
+  },
+
+  createPatient: async (data: { patientName: string; patientId: string }) => {
+    const response = await api.post('/patients', data);
+    return response.data;
+  },
+
+  updatePatient: async (id: string, data: { patientName?: string; patientId?: string }) => {
+    const response = await api.put(`/patients/${id}`, data);
+    return response.data;
+  },
+
+  deletePatient: async (id: string) => {
+    const response = await api.delete(`/patients/${id}`);
+    return response.data;
+  },
+
+  findOrCreatePatient: async (data: { patientName: string; patientId: string }) => {
+    const response = await api.post('/patients/find-or-create', data);
+    return response.data;
+  },
 };
 
 // Users API

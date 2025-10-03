@@ -3,6 +3,15 @@ import { z } from 'zod';
 import { prisma } from '../index';
 import { requireRole } from '../middleware/auth';
 
+// Utility function to format names (trim whitespace and capitalize first letter of each word)
+const formatName = (name: string): string => {
+  return name
+    .trim()
+    .split(/\s+/)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 const router = express.Router();
 
 const inventoryAdjustmentSchema = z.object({
@@ -10,6 +19,7 @@ const inventoryAdjustmentSchema = z.object({
   quantity: z.number().int(),
   reason: z.enum(['PURCHASE', 'DISPENSATION', 'ADJUSTMENT', 'DISPOSE']),
   patientName: z.string().optional(),
+  patientId: z.string().optional(),
   prescriptionNumber: z.string().optional(),
   notes: z.string().optional()
 });
@@ -92,7 +102,7 @@ router.get('/logs', async (req, res) => {
 // Create inventory adjustment
 router.post('/adjust', async (req, res) => {
   try {
-    const { itemId, quantity, reason, patientName, prescriptionNumber, notes } = inventoryAdjustmentSchema.parse(req.body);
+    const { itemId, quantity, reason, patientName, patientId, prescriptionNumber, notes } = inventoryAdjustmentSchema.parse(req.body);
     const userId = (req as any).user.id;
 
     // Get current item
@@ -129,6 +139,9 @@ router.post('/adjust', async (req, res) => {
         });
       }
 
+      // Note: Patient creation/update is now handled by the frontend calling the patients endpoint
+      // This route just uses the provided patientId (which should be the database ID)
+
       // Create inventory log
       const log = await tx.inventoryLog.create({
         data: {
@@ -136,13 +149,15 @@ router.post('/adjust', async (req, res) => {
           userId,
           reason,
           totalAmount: quantity,
-          patientName,
+          patientName: patientName ? formatName(patientName) : undefined,
+          patientId: patientId,
           prescriptionNumber,
           notes: notes || `Stock adjustment: ${quantity > 0 ? '+' : ''}${quantity}`
         },
         include: {
           item: true,
-          user: true
+          user: true,
+          patient: true
         }
       });
 

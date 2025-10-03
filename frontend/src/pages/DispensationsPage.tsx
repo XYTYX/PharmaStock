@@ -28,6 +28,15 @@ interface StagedMedication {
   addedAt: number; // Timestamp when medication was added to staging
 }
 
+// Utility function to format names (trim whitespace and capitalize first letter of each word)
+const formatName = (name: string): string => {
+  return name
+    .trim()
+    .split(/\s+/)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 export default function DispensationsPage() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
@@ -341,15 +350,36 @@ export default function DispensationsPage() {
     
     setIsDispensing(true);
     try {
+      // Handle patient creation/retrieval if patient info is provided
+      let patientRecord = null;
+      if (patientInfo.firstName.trim() || patientInfo.lastName.trim() || patientInfo.patientNumber.trim()) {
+        const firstName = formatName(patientInfo.firstName);
+        const lastName = formatName(patientInfo.lastName);
+        const patientName = `${firstName} ${lastName}`.trim();
+        const patientId = patientInfo.patientNumber.trim();
+
+        if (patientName && patientId) {
+          // Call the patient endpoint to find or create the patient
+          const patientResponse = await inventoryApi.findOrCreatePatient({
+            patientName,
+            patientId
+          });
+          patientRecord = patientResponse.patient;
+        }
+      }
+
       // Process each staged medication
       for (const medication of stagedMedications) {
         // Create patient name if any patient info is provided
         let patientName = '';
         if (patientInfo.firstName.trim() || patientInfo.lastName.trim()) {
-          const firstName = patientInfo.firstName.trim();
-          const lastName = patientInfo.lastName.trim();
+          const firstName = formatName(patientInfo.firstName);
+          const lastName = formatName(patientInfo.lastName);
           patientName = `${firstName} ${lastName}`.trim();
         }
+
+        // Get patient ID if provided
+        const patientId = patientInfo.patientNumber.trim() || undefined;
 
         // Create notes with patient information if provided
         let notes = `Dispensed: ${medication.name} (${translateForm(medication.form)}) - ${medication.expiryDate}`;
@@ -361,6 +391,8 @@ export default function DispensationsPage() {
           itemId: medication.itemId,
           quantity: -medication.quantity, // Negative for dispensation
           reason: 'DISPENSATION',
+          patientName: patientName || undefined,
+          patientId: patientRecord?.id || patientId,
           notes: notes
         });
       }

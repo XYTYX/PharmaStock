@@ -7,6 +7,7 @@ import { PrismaClient } from '@prisma/client';
 import authRoutes from './routes/auth';
 import inventoryRoutes from './routes/inventory';
 import userRoutes from './routes/users';
+import patientRoutes from './routes/patients';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler';
@@ -92,6 +93,7 @@ app.post('/test-cors', (req, res) => {
 app.use('/auth', authRoutes);
 app.use('/inventory', authenticateToken, inventoryRoutes);
 app.use('/users', authenticateToken, userRoutes);
+app.use('/patients', authenticateToken, patientRoutes);
 
 // Error handling middleware
 app.use(errorHandler);
