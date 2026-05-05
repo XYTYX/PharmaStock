@@ -17,11 +17,8 @@ RUN npx prisma generate && npm run build
 # Stage 3: Production runtime
 FROM node:18-alpine
 
-# Install Litestream static binary (works on Alpine)
-RUN wget -q https://github.com/benbjohnson/litestream/releases/download/v0.3.13/litestream-v0.3.13-linux-amd64-static.tar.gz \
-    && tar -xzf litestream-v0.3.13-linux-amd64-static.tar.gz \
-    && mv litestream /usr/local/bin/ \
-    && rm litestream-v0.3.13-linux-amd64-static.tar.gz
+# Copy Litestream binary from official image (no network dependency at build time)
+COPY --from=litestream/litestream /usr/local/bin/litestream /usr/local/bin/litestream
 
 WORKDIR /app
 
