@@ -131,3 +131,5 @@ node_modules
 build/
 *.tar.gz
 pharmastock-*.tar.gz
+
+backups/

@@ -69,3 +69,9 @@ pharmastock-pro/
 - **Admin**: admin / admin123
 - **Pharmacist**: pharmacist / pharmacist123
 - **Technician**: tech / tech123
+curl -X POST http://localhost:3000/users/cmgaxcix9005zb923ttd5nhqi/change-password \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWdhaWdreDIwMDAwc3F4eWExaHNwaGptIiwidXNlcm5hbWUiOiJqb3ljZSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc2MjI2NDAzMiwiZXhwIjoxNzYyMzUwNDMyfQ.7VyOl8NALhTeujHsfT6-7y8t-UtomFO6LjJ1xdB6Li8" \
+  -d '{"currentPassword":"sabin123","newPassword":"sabin576"}'
+
+curl -X POST http://localhost:3000/auth/login   -H "Content-Type: application/json"   -d '{"username":"sabin","password":"sabin576"}'
