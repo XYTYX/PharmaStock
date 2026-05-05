@@ -7,8 +7,8 @@ DB_PATH="${DATABASE_URL#file:}"
 
 mkdir -p "$(dirname "$DB_PATH")"
 
-# Seed from a URL if provided and database doesn't exist yet
-if [ ! -f "$DB_PATH" ] && [ -n "$DATABASE_SEED_URL" ]; then
+# Seed from URL if provided — always overwrites so stale/corrupt files don't block it
+if [ -n "$DATABASE_SEED_URL" ]; then
   echo "Downloading database from seed URL..."
   wget -q -O "$DB_PATH" "$DATABASE_SEED_URL"
   echo "Database seeded successfully"
