@@ -7,6 +7,13 @@ DB_PATH="${DATABASE_URL#file:}"
 
 mkdir -p "$(dirname "$DB_PATH")"
 
+# Seed from a URL if provided and database doesn't exist yet
+if [ ! -f "$DB_PATH" ] && [ -n "$DATABASE_SEED_URL" ]; then
+  echo "Downloading database from seed URL..."
+  wget -q -O "$DB_PATH" "$DATABASE_SEED_URL"
+  echo "Database seeded successfully"
+fi
+
 # Restore from R2 if no database exists yet and R2 is configured
 if [ ! -f "$DB_PATH" ] && [ -n "$R2_BUCKET" ] && [ -n "$R2_ENDPOINT" ]; then
   echo "No database found at $DB_PATH, attempting restore from R2..."
