@@ -7,10 +7,17 @@ DB_PATH="${DATABASE_URL#file:}"
 
 mkdir -p "$(dirname "$DB_PATH")"
 
+echo "--- startup diagnostics ---"
+echo "DB_PATH=$DB_PATH"
+echo "DATABASE_SEED_URL=${DATABASE_SEED_URL:-<not set>}"
+echo "DB file exists: $([ -f "$DB_PATH" ] && echo yes || echo no)"
+echo "DB file size: $([ -f "$DB_PATH" ] && wc -c < "$DB_PATH" || echo n/a) bytes"
+echo "---------------------------"
+
 # Seed from URL if provided — always overwrites so stale/corrupt files don't block it
 if [ -n "$DATABASE_SEED_URL" ]; then
   echo "Downloading database from seed URL..."
-  wget -q -O "$DB_PATH" "$DATABASE_SEED_URL"
+  wget -O "$DB_PATH" "$DATABASE_SEED_URL"
   echo "Database seeded successfully"
 fi
 
