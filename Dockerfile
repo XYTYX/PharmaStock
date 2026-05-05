@@ -17,6 +17,9 @@ RUN npx prisma generate && npm run build
 # Stage 3: Production runtime
 FROM node:18-alpine
 
+# Prisma's query engine binary requires OpenSSL at runtime
+RUN apk add --no-cache openssl
+
 # Copy Litestream binary from official image (no network dependency at build time)
 COPY --from=litestream/litestream /usr/local/bin/litestream /usr/local/bin/litestream
 
