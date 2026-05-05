@@ -1,0 +1,10 @@
+dbs:
+  - path: /data/pharmastock.db
+    replicas:
+      - type: s3
+        endpoint: ${R2_ENDPOINT}
+        bucket: ${R2_BUCKET}
+        path: pharmastock
+        access-key-id: ${LITESTREAM_ACCESS_KEY_ID}
+        secret-access-key: ${LITESTREAM_SECRET_ACCESS_KEY}
+        force-path-style: true
